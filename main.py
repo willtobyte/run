@@ -3,24 +3,28 @@ import importlib
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
+from types import SimpleNamespace
 
 import websockets
 from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
 
 clients = set()
-executor = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)
+executor = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)  # type: ignore[operator]
 
 
-async def broadcast_online():
+async def online(clients: set):
     message = json.dumps({"event": {"topic": "online", "data": {"clients": len(clients)}}})
     await asyncio.gather(*(client.send(message) for client in clients))
+
+
+broadcast = SimpleNamespace(online=online)
 
 
 async def app(connection: ServerConnection) -> None:
     clients.add(connection)
     try:
-        await broadcast_online()
+        await broadcast.online(clients)
 
         async def ping() -> None:
             while True:
@@ -56,7 +60,7 @@ async def app(connection: ServerConnection) -> None:
         await asyncio.gather(ping(), relay())
     finally:
         clients.remove(connection)
-        await broadcast_online()
+        await broadcast.online(clients)
 
 
 async def main() -> None:
