@@ -1,9 +1,10 @@
 import asyncio
-import importlib
 import json
 import os
+from asyncio import to_thread
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+from importlib import import_module
 from types import SimpleNamespace
 
 import websockets
@@ -55,14 +56,7 @@ async def app(connection: ServerConnection) -> None:
                         case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
                             response = {"rpc": {"response": {"id": id}}}
                             try:
-                                result = await asyncio.get_running_loop().run_in_executor(
-                                    executor,
-                                    partial(
-                                        importlib.import_module(f"procedures.{method}").run,
-                                        **arguments,
-                                    ),
-                                )
-
+                                result = await to_thread(partial(import_module(f"procedures.{method}").run, **arguments))  # fmt: skip
                                 response["rpc"]["response"]["result"] = result
                             except (ModuleNotFoundError, AttributeError, Exception) as exc:
                                 response["rpc"]["response"]["error"] = str(exc)
