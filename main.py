@@ -3,6 +3,7 @@ import importlib
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from types import SimpleNamespace
 
 import websockets
@@ -56,8 +57,10 @@ async def app(connection: ServerConnection) -> None:
                             try:
                                 result = await asyncio.get_running_loop().run_in_executor(
                                     executor,
-                                    importlib.import_module(f"procedures.{method}").run,
-                                    **arguments,
+                                    partial(
+                                        importlib.import_module(f"procedures.{method}").run,
+                                        **arguments,
+                                    ),
                                 )
 
                                 response["rpc"]["response"]["result"] = result
