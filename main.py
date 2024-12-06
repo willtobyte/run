@@ -39,8 +39,11 @@ async def app(connection: ServerConnection) -> None:
                             try:
                                 module = importlib.import_module(f"procedures.{method}")
                                 result = await asyncio.get_running_loop().run_in_executor(
-                                    executor, module.run, **arguments
+                                    executor,
+                                    module.run,
+                                    **arguments,
                                 )
+
                                 response["rpc"]["response"]["result"] = result
                             except (ModuleNotFoundError, AttributeError, Exception) as exc:
                                 response["rpc"]["response"]["error"] = str(exc)
