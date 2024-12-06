@@ -13,7 +13,7 @@ from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
 
 clients = weakref.WeakSet()
-lock = asyncio.Lock()
+
 executor = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)  # type: ignore[operator]
 
 
