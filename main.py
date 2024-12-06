@@ -25,19 +25,25 @@ async def online(clients: set):
 broadcast = SimpleNamespace(online=online)
 
 
+async def disconnect(connection: ServerConnection) -> None:
+    if connection in clients:
+        clients.remove(connection)
+    await broadcast.online(clients)
+
+
 async def app(connection: ServerConnection) -> None:
     clients.add(connection)
     try:
         await broadcast.online(clients)
 
+        # Sends periodic pings to the client to check connectivity
         async def ping() -> None:
             while True:
                 try:
-                    await asyncio.sleep(3)
+                    await asyncio.sleep(10)
                     await asyncio.wait_for(connection.send(json.dumps({"command": "ping"})), timeout=1)
                 except (ConnectionClosed, asyncio.TimeoutError):
-                    clients.remove(connection)
-                    await broadcast.online(clients)
+                    await disconnect(connection)
                     break
 
         async def relay() -> None:
@@ -55,14 +61,11 @@ async def app(connection: ServerConnection) -> None:
                         case _:
                             pass
             except ConnectionClosed:
-                clients.remove(connection)
-                await broadcast.online(clients)
-                pass
+                await disconnect(connection)
 
         await asyncio.gather(ping(), relay())
     finally:
-        clients.remove(connection)
-        await broadcast.online(clients)
+        await disconnect(connection)
 
 
 async def main() -> None:
