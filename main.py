@@ -1,9 +1,7 @@
 import asyncio
 import json
-import os
 import weakref
 from asyncio import to_thread
-from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import import_module
 from types import SimpleNamespace
@@ -14,15 +12,19 @@ from websockets.exceptions import ConnectionClosed
 
 clients = weakref.WeakSet()
 
-executor = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)  # type: ignore[operator]
 
-
-async def online(clients: set):
+async def online(clients: set) -> None:
     message = json.dumps({"event": {"topic": "online", "data": {"clients": len(clients)}}})
     await asyncio.gather(*(client.send(message) for client in clients))
 
 
 broadcast = SimpleNamespace(online=online)
+
+
+async def add(connection: ServerConnection) -> None:
+    if connection not in clients:
+        clients.add(connection)
+    await broadcast.online(clients)
 
 
 async def disconnect(connection: ServerConnection) -> None:
@@ -32,11 +34,10 @@ async def disconnect(connection: ServerConnection) -> None:
 
 
 async def app(connection: ServerConnection) -> None:
-    clients.add(connection)
+    await add(connection)
     try:
         await broadcast.online(clients)
 
-        # Sends periodic pings to the client to check connectivity
         async def ping() -> None:
             while True:
                 try:
