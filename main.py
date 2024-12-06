@@ -58,7 +58,7 @@ async def app(connection: ServerConnection) -> None:
                             try:
                                 result = await to_thread(partial(import_module(f"procedures.{method}").run, **arguments))  # fmt: skip
                                 response["rpc"]["response"]["result"] = result
-                            except (ModuleNotFoundError, AttributeError, Exception) as exc:
+                            except (ModuleNotFoundError, AttributeError) as exc:
                                 response["rpc"]["response"]["error"] = str(exc)
                             await connection.send(json.dumps(response))
                         case _:
