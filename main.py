@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import weakref
 from asyncio import to_thread
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -11,19 +12,9 @@ import websockets
 from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
 
-clients = set()
+clients = weakref.WeakSet()
 lock = asyncio.Lock()
 executor = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)  # type: ignore[operator]
-
-
-async def add(client):
-    async with lock:
-        clients.add(client)
-
-
-async def remove(client):
-    async with lock:
-        clients.remove(client)
 
 
 async def online(clients: set):
@@ -35,7 +26,7 @@ broadcast = SimpleNamespace(online=online)
 
 
 async def app(connection: ServerConnection) -> None:
-    await add(connection)
+    clients.add(connection)
     try:
         await broadcast.online(clients)
 
@@ -45,7 +36,7 @@ async def app(connection: ServerConnection) -> None:
                     await asyncio.sleep(3)
                     await asyncio.wait_for(connection.send(json.dumps({"command": "ping"})), timeout=1)
                 except (ConnectionClosed, asyncio.TimeoutError):
-                    await remove(connection)
+                    clients.remove(connection)
                     await broadcast.online(clients)
                     break
 
@@ -58,7 +49,7 @@ async def app(connection: ServerConnection) -> None:
                             try:
                                 result = await to_thread(partial(import_module(f"procedures.{method}").run, **arguments))  # fmt: skip
                                 response["rpc"]["response"]["result"] = result
-                            except (ModuleNotFoundError, AttributeError) as exc:
+                            except Exception as exc:
                                 response["rpc"]["response"]["error"] = str(exc)
                             await connection.send(json.dumps(response))
                         case _:
@@ -68,7 +59,7 @@ async def app(connection: ServerConnection) -> None:
 
         await asyncio.gather(ping(), relay())
     finally:
-        await remove(connection)
+        clients.remove(connection)
         await broadcast.online(clients)
 
 
