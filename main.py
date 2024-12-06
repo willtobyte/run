@@ -10,7 +10,18 @@ from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
 
 clients = set()
+lock = asyncio.Lock()
 executor = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)  # type: ignore[operator]
+
+
+async def add(client):
+    async with lock:
+        clients.add(client)
+
+
+async def remove(client):
+    async with lock:
+        clients.remove(client)
 
 
 async def online(clients: set):
@@ -22,7 +33,7 @@ broadcast = SimpleNamespace(online=online)
 
 
 async def app(connection: ServerConnection) -> None:
-    clients.add(connection)
+    await add(connection)
     try:
         await broadcast.online(clients)
 
@@ -30,8 +41,10 @@ async def app(connection: ServerConnection) -> None:
             while True:
                 try:
                     await asyncio.sleep(3)
-                    await connection.send(json.dumps({"command": "ping"}))
-                except ConnectionClosed:
+                    await asyncio.wait_for(connection.send(json.dumps({"command": "ping"})), timeout=1)
+                except (ConnectionClosed, asyncio.TimeoutError):
+                    await remove(connection)
+                    await broadcast.online(clients)
                     break
 
         async def relay() -> None:
@@ -58,7 +71,7 @@ async def app(connection: ServerConnection) -> None:
 
         await asyncio.gather(ping(), relay())
     finally:
-        clients.remove(connection)
+        await remove(connection)
         await broadcast.online(clients)
 
 
