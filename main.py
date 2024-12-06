@@ -1,43 +1,59 @@
 import asyncio
 import importlib
 import json
+import os
+from concurrent.futures import ThreadPoolExecutor
 
 import websockets
 from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
 
+clients = set()
+executor = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)
+
+
+async def broadcast_online():
+    message = json.dumps({"event": {"topic": "online", "data": {"clients": len(clients)}}})
+    await asyncio.gather(*(client.send(message) for client in clients))
+
 
 async def app(connection: ServerConnection) -> None:
-    async def ping() -> None:
-        while True:
+    clients.add(connection)
+    try:
+        await broadcast_online()
+
+        async def ping() -> None:
+            while True:
+                try:
+                    await asyncio.sleep(3)
+                    await connection.send(json.dumps({"command": "ping"}))
+                except ConnectionClosed:
+                    break
+
+        async def relay() -> None:
             try:
-                await asyncio.sleep(3)
-                await connection.send(json.dumps({"command": "ping"}))
-                await connection.send(
-                    json.dumps({"event": {"topic": "myevent", "data": {"foobar": "abc123", "arr": [1, 2, 3]}}})
-                )
+                async for message in connection:
+                    match json.loads(message):
+                        case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
+                            response = {"rpc": {"response": {"id": id}}}
+                            try:
+                                module = importlib.import_module(f"procedures.{method}")
+                                result = await asyncio.get_running_loop().run_in_executor(
+                                    executor, module.run, **arguments
+                                )
+                                response["rpc"]["response"]["result"] = result
+                            except (ModuleNotFoundError, AttributeError, Exception) as exc:
+                                response["rpc"]["response"]["error"] = str(exc)
+                            await connection.send(json.dumps(response))
+                        case _:
+                            pass
             except ConnectionClosed:
-                break
+                pass
 
-    async def echo() -> None:
-        try:
-            async for message in connection:
-                match json.loads(message):
-                    case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
-                        response = {"rpc": {"response": {"id": id}}}
-                        try:
-                            module = importlib.import_module(f"procedures.{method}")
-                            result = module.run(arguments)
-                            response["rpc"]["response"]["result"] = result
-                        except (ModuleNotFoundError, AttributeError, Exception) as exc:
-                          response["rpc"]["response"]["error"] = str(exc)
-                        await connection.send(json.dumps(response))
-                    case _:
-                        pass
-        except ConnectionClosed:
-            pass
-
-    await asyncio.gather(ping(), echo())
+        await asyncio.gather(ping(), relay())
+    finally:
+        clients.remove(connection)
+        await broadcast_online()
 
 
 async def main() -> None:
