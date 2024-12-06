@@ -41,10 +41,9 @@ async def app(connection: ServerConnection) -> None:
                         case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
                             response = {"rpc": {"response": {"id": id}}}
                             try:
-                                module = importlib.import_module(f"procedures.{method}")
                                 result = await asyncio.get_running_loop().run_in_executor(
                                     executor,
-                                    module.run,
+                                    importlib.import_module(f"procedures.{method}").run,
                                     **arguments,
                                 )
 
