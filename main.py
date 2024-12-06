@@ -55,6 +55,8 @@ async def app(connection: ServerConnection) -> None:
                         case _:
                             pass
             except ConnectionClosed:
+                clients.remove(connection)
+                await broadcast.online(clients)
                 pass
 
         await asyncio.gather(ping(), relay())
