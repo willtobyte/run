@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 import json
 
 import websockets
@@ -23,9 +24,14 @@ async def app(connection: ServerConnection) -> None:
             async for message in connection:
                 match json.loads(message):
                     case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
-                        print(f"{method=} {arguments=}")
-                        response = json.dumps({"rpc": {"response": {"id": id, "result": {"foofoo": True}}}})
-                        await connection.send(response)
+                        response = {"rpc": {"response": {"id": id}}}
+                        try:
+                            module = importlib.import_module(f"procedures.{method}")
+                            result = module.run(arguments)
+                            response["rpc"]["response"]["result"] = result
+                        except (ModuleNotFoundError, AttributeError, Exception) as exc:
+                          response["rpc"]["response"]["error"] = str(exc)
+                        await connection.send(json.dumps(response))
                     case _:
                         pass
         except ConnectionClosed:
@@ -35,7 +41,7 @@ async def app(connection: ServerConnection) -> None:
 
 
 async def main() -> None:
-    async with websockets.serve(app, "localhost", 3000) as server:
+    async with websockets.serve(app, host="0.0.0.0", port=3000) as server:
         await server.serve_forever()
 
 
