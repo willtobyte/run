@@ -1,6 +1,19 @@
 services:
+  socket:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      ports:
+        - "3000:3000"
+      restart: unless-stopped
+      depends_on:
+        redis:
+          condition: service_healthy
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
   redis:
     image: redis:latest
+    container_name: redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1s
