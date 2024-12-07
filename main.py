@@ -1,16 +1,41 @@
 import asyncio
+import hashlib
 import json
 import weakref
 from asyncio import to_thread
+from datetime import timedelta
 from functools import partial
 from importlib import import_module
+from io import BytesIO
 from types import SimpleNamespace
 
+import docker
+import httpx
 import websockets
+from aiocache.backends.redis import RedisCache
+from aiocache.decorators import cached
 from websockets.asyncio.server import ServerConnection
 from websockets.exceptions import ConnectionClosed
 
 clients = weakref.WeakSet()
+
+client = docker.from_env()
+container = client.containers.get("redis")
+hostname = container.attrs["Config"]["Hostname"]
+
+
+@cached(ttl=timedelta(days=365).total_seconds(), cache=RedisCache, endpoint=hostname)
+async def fetch(url: str) -> tuple[bytes, str]:
+    async with httpx.AsyncClient() as client:
+        async with client.stream("GET", url) as response:
+            response.raise_for_status()
+            hasher = hashlib.sha1()
+            buffer = BytesIO()
+            async for chunk in response.aiter_bytes():
+                buffer.write(chunk)
+                hasher.update(chunk)
+            buffer.seek(0)
+            return buffer.getvalue(), hasher.hexdigest()
 
 
 async def online(clients: set) -> None:
@@ -22,14 +47,12 @@ broadcast = SimpleNamespace(online=online)
 
 
 async def add(connection: ServerConnection) -> None:
-    if connection not in clients:
-        clients.add(connection)
+    clients.add(connection)
     await broadcast.online(clients)
 
 
 async def disconnect(connection: ServerConnection) -> None:
-    if connection in clients:
-        clients.remove(connection)
+    clients.discard(connection)
     await broadcast.online(clients)
 
 
