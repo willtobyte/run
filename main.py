@@ -168,15 +168,12 @@ async def download(
 
     match data, hash:
         case (bytes() as data, bytes() as hash) if all(value and value.strip() for value in (data, hash)):
-            print("cached!")
             return data, hash.decode()
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
-        print("not cached...")
         response = await client.get(url)
         ext = os.path.splitext(urlparse(url).path)[-1].lower()
 
-        print(f"{namespace=} {ext=} {filename=} {response.status_code=} {response.content[:10]=}")
         async with redis.pipeline(transaction=True) as pipe:
             match ext:
                 case ".zip":
@@ -201,6 +198,7 @@ async def download(
                     pipe.set(f"{namespace}:{filename}:hash", hash, ex=int(ttl.total_seconds()))
                     pipe.set(f"{namespace}:{filename}:content", data, ex=int(ttl.total_seconds()))
                     await pipe.execute()
+
                     return data, hash
 
 
