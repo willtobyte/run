@@ -165,7 +165,6 @@ async def download(
         pipe.get(f"{namespace}:{filename}:content")
         pipe.get(f"{namespace}:{filename}:hash")
         data, hash = await pipe.execute()
-        print(f"Retrieved from cache: type data={type(data)=}, type hash={type(hash)=}")
 
     match data, hash:
         case (bytes() as data, bytes() as hash) if all(value and value.strip() for value in (data, hash)):
@@ -182,17 +181,18 @@ async def download(
             match ext:
                 case ".zip":
                     with zipfile.ZipFile(BytesIO(response.content)) as zf:
-                        mapping = {
-                            name: (content := zf.read(name), hashlib.sha1(content).hexdigest())
-                            for name in zf.namelist()
-                        }
-
-                        for name, (content, sha1) in mapping.items():
-                            pipe.set(f"{namespace}:{name}:hash", sha1, ex=int(ttl.total_seconds()))
+                        result = None
+                        for name in zf.namelist():
+                            content = zf.read(name)
+                            hash = hashlib.sha1(content).hexdigest()
+                            pipe.set(f"{namespace}:{name}:hash", hash, ex=int(ttl.total_seconds()))
                             pipe.set(f"{namespace}:{name}:content", content, ex=int(ttl.total_seconds()))
+                            if name == filename:
+                                result = (content, hash)
 
                         await pipe.execute()
-                        return mapping[filename]
+
+                        return result
 
                 case _:
                     data = response.content
@@ -223,7 +223,7 @@ async def read_root(redis: Redis = Depends(get_redis)):
     runtime = "1.0.16"
     url = f"https://github.com/flippingpixels/carimbo/releases/download/v{runtime}/WebAssembly.zip"
 
-    result = await download(redis, url, "carimbo.wasm")
+    result = await download(redis, url, "carimbo.js")
     if result is None:
         return {"ok": False}
 
