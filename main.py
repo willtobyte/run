@@ -175,9 +175,13 @@ async def download(
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
+        if not response.is_success:
+            return None
+
         ext = os.path.splitext(urlparse(url).path)[-1].lower()
 
         async with redis.pipeline(transaction=True) as pipe:
+
             def store(pipe, key_parts: tuple[str, ...], content: bytes, hash: str):
                 prefix = key(key_parts)
                 pipe.set(key((prefix, "hash")), hash, ex=int(ttl.total_seconds()))
@@ -225,7 +229,7 @@ async def read_root(redis: Redis = Depends(get_redis)):
     runtime = "1.0.16"
     url = f"https://github.com/flippingpixels/carimbo/releases/download/v{runtime}/WebAssembly.zip"
 
-    result = await download(redis, url, "carimbo.js")
+    result = await download(redis, url, "carimbo.wasm")
     if result is None:
         return {"ok": False}
 
