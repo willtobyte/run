@@ -19,4 +19,6 @@ services:
       interval: 1s
       timeout: 3s
       retries: 9
+    ports:
+      - "6379:6379"
     restart: unless-stopped
