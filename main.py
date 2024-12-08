@@ -11,11 +11,25 @@ from types import SimpleNamespace
 
 import docker
 import httpx
-import websockets
 from aiocache.backends.redis import RedisCache
 from aiocache.decorators import cached
-from websockets.asyncio.server import ServerConnection
-from websockets.exceptions import ConnectionClosed
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi import Request
+from fastapi import WebSocket
+from fastapi import WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from pydantic import ValidationError
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 clients = weakref.WeakSet()
 
@@ -23,6 +37,32 @@ client = docker.from_env()
 container = client.containers.get("redis")
 hostname = container.attrs["Config"]["Hostname"]
 
+
+class URLBaseParams(BaseModel):
+    runtime: str
+    org: str
+    repo: str
+    release: str
+    format: str
+    remaining: str = ""
+
+
+@app.middleware("http")
+async def extract_arguments(request: Request, call_next):
+    try:
+        parts = request.url.path.strip("/").split("/")
+        request.scope["arguments"] = URLBaseParams(
+            runtime=parts[0],
+            org=parts[1],
+            repo=parts[2],
+            release=parts[3],
+            format=parts[4],
+            remaining="/".join(parts[5:]),
+        ).dict()
+    except (IndexError, ValueError, ValidationError):
+        raise HTTPException(status_code=400, detail="Invalid URL structure or missing keys")
+    return await call_next(request)
+c
 
 @cached(ttl=timedelta(days=365).total_seconds(), cache=RedisCache, endpoint=hostname)
 async def fetch(url: str) -> tuple[bytes, str]:
@@ -46,56 +86,51 @@ async def online(clients: set) -> None:
 broadcast = SimpleNamespace(online=online)
 
 
-async def add(connection: ServerConnection) -> None:
+async def add(connection: WebSocket) -> None:
     clients.add(connection)
     await broadcast.online(clients)
 
 
-async def disconnect(connection: ServerConnection) -> None:
+async def disconnect(connection: WebSocket) -> None:
     clients.discard(connection)
     await broadcast.online(clients)
 
 
-async def app(connection: ServerConnection) -> None:
-    await add(connection)
+@app.websocket("/socket")
+async def websocket(websocket: WebSocket) -> None:
+    await websocket.accept()
+    clients.add(websocket)
+
     try:
-        await broadcast.online(clients)
 
         async def ping() -> None:
             while True:
                 try:
                     await asyncio.sleep(10)
-                    await asyncio.wait_for(connection.send(json.dumps({"command": "ping"})), timeout=1)
-                except (ConnectionClosed, asyncio.TimeoutError):
-                    await disconnect(connection)
+                    await websocket.send_text(json.dumps({"command": "ping"}))
+                except (WebSocketDisconnect, asyncio.TimeoutError):
+                    await disconnect(websocket)
                     break
 
         async def relay() -> None:
             try:
-                async for message in connection:
+                async for message in websocket.iter_text():
                     match json.loads(message):
                         case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
                             response = {"rpc": {"response": {"id": id}}}
                             try:
-                                result = await to_thread(partial(import_module(f"procedures.{method}").run, **arguments))  # fmt: skip
+                                module = import_module(f"procedures.{method}")
+                                func = partial(module.run, **arguments)
+                                result = await to_thread(func)
                                 response["rpc"]["response"]["result"] = result
                             except Exception as exc:
                                 response["rpc"]["response"]["error"] = str(exc)
-                            await connection.send(json.dumps(response))
+                            await websocket.send_text(json.dumps(response))
                         case _:
                             pass
-            except ConnectionClosed:
-                await disconnect(connection)
+            except WebSocketDisconnect:
+                await disconnect(websocket)
 
         await asyncio.gather(ping(), relay())
     finally:
-        await disconnect(connection)
-
-
-async def main() -> None:
-    async with websockets.serve(app, host="0.0.0.0", port=3000) as server:
-        await server.serve_forever()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        await disconnect(websocket)

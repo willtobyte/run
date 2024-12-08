@@ -8,3 +8,7 @@
 .env
 .venv/
 venv/
+
+Dockerfile
+docker-compose.yaml
+pyproject.toml

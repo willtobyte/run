@@ -20,5 +20,5 @@ COPY --from=venv /opt/venv .
 WORKDIR /opt/app
 COPY . .
 
-ENTRYPOINT ["/opt/venv/bin/python"]
-CMD ["main.py"]
+ENTRYPOINT ["uvicorn"]
+CMD ["main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "16"]
