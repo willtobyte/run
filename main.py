@@ -184,8 +184,9 @@ async def download(
 
             def store(pipe, key_parts: tuple[str, ...], content: bytes, hash: str):
                 prefix = key(key_parts)
-                pipe.set(key((prefix, "hash")), hash, ex=int(ttl.total_seconds()))
-                pipe.set(key((prefix, "content")), content, ex=int(ttl.total_seconds()))
+                exp = ttl.total_seconds()
+                pipe.set(key((prefix, "hash")), hash, ex=exp)
+                pipe.set(key((prefix, "content")), content, ex=exp)
 
             match ext:
                 case ".zip":
