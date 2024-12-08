@@ -38,7 +38,7 @@ container = client.containers.get("redis")
 hostname = container.attrs["Config"]["Hostname"]
 
 
-class URLBaseParams(BaseModel):
+class Metadata(BaseModel):
     runtime: str
     org: str
     repo: str
@@ -51,7 +51,7 @@ class URLBaseParams(BaseModel):
 async def extract_arguments(request: Request, call_next):
     try:
         parts = request.url.path.strip("/").split("/")
-        request.scope["arguments"] = URLBaseParams(
+        request.scope["metadata"] = Metadata(
             runtime=parts[0],
             org=parts[1],
             repo=parts[2],
