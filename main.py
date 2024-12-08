@@ -161,9 +161,12 @@ async def download(
 ) -> tuple[bytes, str] | None:
     namespace = url.split("://", 1)[-1]
 
+    def key(parts: tuple[str, ...]) -> str:
+        return ":".join(parts)
+
     async with redis.pipeline(transaction=True) as pipe:
-        pipe.get(f"{namespace}:{filename}:content")
-        pipe.get(f"{namespace}:{filename}:hash")
+        pipe.get(key((namespace, filename, "content")))
+        pipe.get(key((namespace, filename, "hash")))
         data, hash = await pipe.execute()
 
     match data, hash:
@@ -175,31 +178,32 @@ async def download(
         ext = os.path.splitext(urlparse(url).path)[-1].lower()
 
         async with redis.pipeline(transaction=True) as pipe:
+            def store(pipe, key_parts: tuple[str, ...], content: bytes, hash: str):
+                prefix = key(key_parts)
+                pipe.set(key((prefix, "hash")), hash, ex=int(ttl.total_seconds()))
+                pipe.set(key((prefix, "content")), content, ex=int(ttl.total_seconds()))
+
             match ext:
                 case ".zip":
                     with zipfile.ZipFile(BytesIO(response.content)) as zf:
                         result = None
                         for name in zf.namelist():
                             content = zf.read(name)
-                            hash = hashlib.sha1(content).hexdigest()
-                            pipe.set(f"{namespace}:{name}:hash", hash, ex=int(ttl.total_seconds()))
-                            pipe.set(f"{namespace}:{name}:content", content, ex=int(ttl.total_seconds()))
+                            content_hash = hashlib.sha1(content).hexdigest()
+                            store(pipe, (namespace, name), content, content_hash)
                             if name == filename:
-                                result = (content, hash)
+                                result = (content, content_hash)
 
                         await pipe.execute()
-
                         return result
 
                 case _:
                     data = response.content
-                    hash = hashlib.sha1(data).hexdigest()
+                    content_hash = hashlib.sha1(data).hexdigest()
+                    store(pipe, (namespace, filename), data, content_hash)
 
-                    pipe.set(f"{namespace}:{filename}:hash", hash, ex=int(ttl.total_seconds()))
-                    pipe.set(f"{namespace}:{filename}:content", data, ex=int(ttl.total_seconds()))
                     await pipe.execute()
-
-                    return data, hash
+                    return data, content_hash
 
 
 @cached(ttl=timedelta(hours=1).total_seconds(), serializer=PickleSerializer(), cache=RedisCache, endpoint=hostname)
