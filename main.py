@@ -206,16 +206,14 @@ async def download(
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
-    apps = database.get("apps", [])
+async def index(request: Request):
+    artifacts = database.get("artifacts", [])
 
-    links = [
-        f'<li><a href="/play/{app["runtime"]}/{app["organization"]}/{app["repository"]}/{app["release"]}/{app["resolution"]}">'
-        f'/play/{app["runtime"]}/{app["organization"]}/{app["repository"]}/{app["release"]}/{app["resolution"]}</a></li>'
-        for app in apps
-    ]
-
-    return f"<html><body><ul>{''.join(links)}</ul></body></html>"
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"artifacts": artifacts},
+    )
 
 
 @app.get("/play/{runtime}/{organization}/{repository}/{release}/{resolution}", response_class=HTMLResponse)
@@ -238,7 +236,7 @@ async def play(
 
     return templates.TemplateResponse(
         request=request,
-        name="index.html",
+        name="play.html",
         context={
             "url": url,
             "width": width,
