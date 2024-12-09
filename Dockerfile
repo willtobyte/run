@@ -11,7 +11,7 @@ RUN <<EOF
 set -euxo
 python -m venv .
 . bin/activate
-pip install -r requirements.txt
+pip install --no-cache-dir --requirement requirements.txt
 EOF
 
 FROM base
@@ -20,5 +20,12 @@ COPY --from=venv /opt/venv .
 WORKDIR /opt/app
 COPY . .
 
+RUN <<EOF
+  apt-get update
+  apt-get install --yes --no-install-recommends mime-support
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+EOF
+
 ENTRYPOINT ["uvicorn"]
-CMD ["main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "16"]
+CMD ["main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "4"]

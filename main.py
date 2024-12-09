@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import mimetypes
 import os
 import weakref
 import zipfile
@@ -10,24 +11,29 @@ from functools import partial
 from importlib import import_module
 from io import BytesIO
 from types import SimpleNamespace
+from typing import AsyncGenerator
 from urllib.parse import urlparse
 
 import docker
 import httpx
-from aiocache.backends.redis import RedisCache
-from aiocache.decorators import cached
-from aiocache.serializers import PickleSerializer
 from fastapi import Depends
 from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi import Request
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from pydantic import ValidationError
 from redis.asyncio import Redis
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,24 +52,6 @@ class Metadata(BaseModel):
     release: str
     format: str
     remaining: str = ""
-
-
-@app.middleware("http")
-async def metadata(request: Request, call_next):
-    try:
-        parts = request.url.path.strip("/").split("/")
-        request.scope["metadata"] = Metadata(
-            runtime=parts[0],
-            organization=parts[1],
-            repository=parts[2],
-            release=parts[3],
-            format=parts[4],
-            remaining="/".join(parts[5:]),
-        ).dict()
-    except (IndexError, ValueError, ValidationError):
-        # raise HTTPException(status_code=400, detail="Invalid URL structure or missing keys")
-        pass
-    return await call_next(request)
 
 
 async def online(clients: set) -> None:
@@ -158,7 +146,7 @@ async def download(
     url: str,
     filename: str,
     ttl: timedelta = timedelta(hours=1),
-) -> tuple[bytes, str] | None:
+) -> tuple[AsyncGenerator[bytes, None], str] | None:
     namespace = url.split("://", 1)[-1]
 
     def key(parts: tuple[str, ...]) -> str:
@@ -171,7 +159,11 @@ async def download(
 
     match data, hash:
         case (bytes() as data, bytes() as hash) if all(value and value.strip() for value in (data, hash)):
-            return data, hash.decode()
+
+            async def stream():
+                yield data
+
+            return stream(), hash.decode()
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
@@ -184,9 +176,8 @@ async def download(
 
             def store(pipe, key_parts: tuple[str, ...], content: bytes, hash: str):
                 prefix = key(key_parts)
-                exp = ttl.total_seconds()
-                pipe.set(key((prefix, "hash")), hash, ex=exp)
-                pipe.set(key((prefix, "content")), content, ex=exp)
+                pipe.set(key((prefix, "hash")), hash, ex=ttl)
+                pipe.set(key((prefix, "content")), content, ex=ttl)
 
             match ext:
                 case ".zip":
@@ -197,7 +188,11 @@ async def download(
                             content_hash = hashlib.sha1(content).hexdigest()
                             store(pipe, (namespace, name), content, content_hash)
                             if name == filename:
-                                result = (content, content_hash)
+
+                                async def stream():
+                                    yield content
+
+                                result = (stream(), content_hash)
 
                         await pipe.execute()
                         return result
@@ -208,34 +203,74 @@ async def download(
                     store(pipe, (namespace, filename), data, content_hash)
 
                     await pipe.execute()
-                    return data, content_hash
+
+                    async def stream():
+                        yield data
+
+                    return stream(), content_hash
 
 
-@cached(ttl=timedelta(hours=1).total_seconds(), serializer=PickleSerializer(), cache=RedisCache, endpoint=hostname)
-async def fetch(url: str) -> tuple[bytes, str]:
-    async with httpx.AsyncClient(follow_redirects=True) as client:
-        async with client.stream("GET", url) as response:
-            response.raise_for_status()
-            hasher = hashlib.sha1()
-            buffer = BytesIO()
-            async for chunk in response.aiter_bytes():
-                buffer.write(chunk)
-                hasher.update(chunk)
-            buffer.seek(0)
-            return buffer.getvalue(), hasher.hexdigest()
+@app.get("/play/{runtime}/{organization}/{repository}/{release}/{format}", response_class=HTMLResponse)
+async def index(runtime: str, organization: str, repository: str, release: str, format: str, request: Request):
+    mapping = {
+        "480p": (854, 480),
+        "720p": (1280, 720),
+        "1080p": (1920, 1080),
+    }
+    width, height = mapping[format]
+
+    url = f"/play/{runtime}/{organization}/{repository}/{release}/{format}/"
+
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "url": url,
+            "width": width,
+            "height": height,
+        },
+    )
 
 
-@app.get("/")
-async def read_root(redis: Redis = Depends(get_redis)):
-    runtime = "1.0.16"
-    url = f"https://github.com/flippingpixels/carimbo/releases/download/v{runtime}/WebAssembly.zip"
+@app.get("/play/{runtime}/{organization}/{repository}/{release}/{format}/{filename}")
+async def static(
+    runtime: str,
+    organization: str,
+    repository: str,
+    release: str,
+    format: str,
+    filename: str,
+    redis: Redis = Depends(get_redis),
+):
+    match filename:
+        case "bundle.7z":
+            url = f"https://github.com/{organization}/{repository}/releases/download/v{release}/bundle.7z"
+        case "carimbo.js" | "carimbo.wasm":
+            url = f"https://github.com/carimbolabs/carimbo/releases/download/v{runtime}/WebAssembly.zip"
+        case _:
+            raise HTTPException(status_code=404)
 
-    result = await download(redis, url, "carimbo.wasm")
+    result = await download(redis, url, filename)
     if result is None:
-        return {"ok": False}
+        raise HTTPException(status_code=404)
 
-    [file_bytes, sha1_hex] = result
-    return {"ok": True, "sha1_hex": sha1_hex}
+    content, hash = result
+    media_type, _ = mimetypes.guess_type(filename)
+    if not media_type:
+        media_type = "application/octet-stream"
+
+    duration = timedelta(days=365).total_seconds()
+    headers = {
+        "Cache-Control": f"public, max-age={int(duration)}",
+        "Content-Disposition": f'inline; filename="{filename}"',
+        "ETag": hash,
+    }
+
+    return StreamingResponse(
+        content=content,
+        media_type=media_type,
+        headers=headers,
+    )
 
 
 # async def download():

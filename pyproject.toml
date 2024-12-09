@@ -11,9 +11,3 @@ select = ["F", "I"]
 
 [tool.ruff.lint.isort]
 force-single-line = true
-
-[mypy.plugins.mypy_django_plugin]
-main = true
-
-[mypy.plugins.django-stubs]
-django_settings_module = "gatekeeper.settings"
