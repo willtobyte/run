@@ -205,18 +205,26 @@ async def download(
                     return stream(), content_hash
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def index():
-    return "ok"
+    apps = database.get("apps", [])
+
+    links = [
+        f'<li><a href="/play/{app["runtime"]}/{app["organization"]}/{app["repository"]}/{app["release"]}/{app["resolution"]}">'
+        f'/play/{app["runtime"]}/{app["organization"]}/{app["repository"]}/{app["release"]}/{app["resolution"]}</a></li>'
+        for app in apps
+    ]
+
+    return f"<html><body><ul>{''.join(links)}</ul></body></html>"
 
 
-@app.get("/play/{runtime}/{organization}/{repository}/{release}/{format}", response_class=HTMLResponse)
+@app.get("/play/{runtime}/{organization}/{repository}/{release}/{resolution}", response_class=HTMLResponse)
 async def play(
     runtime: str,
     organization: str,
     repository: str,
     release: str,
-    format: str,
+    resolution: str,
     request: Request,
 ):
     mapping = {
@@ -224,9 +232,9 @@ async def play(
         "720p": (1280, 720),
         "1080p": (1920, 1080),
     }
-    width, height = mapping[format]
+    width, height = mapping[resolution]
 
-    url = f"/play/{runtime}/{organization}/{repository}/{release}/{format}/"
+    url = f"/play/{runtime}/{organization}/{repository}/{release}/{resolution}/"
 
     return templates.TemplateResponse(
         request=request,
@@ -239,13 +247,13 @@ async def play(
     )
 
 
-@app.get("/play/{runtime}/{organization}/{repository}/{release}/{format}/{filename}")
+@app.get("/play/{runtime}/{organization}/{repository}/{release}/{resolution}/{filename}")
 async def dynamic(
     runtime: str,
     organization: str,
     repository: str,
     release: str,
-    format: str,
+    resolution: str,
     filename: str,
     redis: Redis = Depends(get_redis),
 ):
