@@ -271,12 +271,3 @@ async def static(
         media_type=media_type,
         headers=headers,
     )
-
-
-# async def download():
-#     runtime = "1.0.16"
-
-#     url = f"https://github.com/flippingpixels/carimbo/releases/download/v{runtime}/WebAssembly.zip"
-
-#     [b, h] = await fetch(url)
-#     print(f"Hex {h}")
