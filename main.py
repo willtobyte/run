@@ -6,13 +6,16 @@ import os
 import weakref
 import zipfile
 from asyncio import to_thread
+from datetime import datetime
 from datetime import timedelta
 from functools import partial
 from importlib import import_module
 from io import BytesIO
+from time import mktime
 from types import SimpleNamespace
 from typing import AsyncGenerator
 from urllib.parse import urlparse
+from wsgiref.handlers import format_date_time
 
 import docker
 import httpx
@@ -112,9 +115,6 @@ async def websocket(websocket: WebSocket) -> None:
         await disconnect(websocket)
 
 
-# url := fmt.Sprintf("https://github.com/flippingpixels/carimbo/releases/download/v%s/WebAssembly.zip", runtime)
-
-
 redis = None
 client = docker.from_env()
 container = client.containers.get("redis")
@@ -174,7 +174,7 @@ async def download(
 
         async with redis.pipeline(transaction=True) as pipe:
 
-            def store(pipe, key_parts: tuple[str, ...], content: bytes, hash: str):
+            def store(pipe, key_parts: tuple[str, ...], content: bytes, hash: str) -> None:
                 prefix = key(key_parts)
                 pipe.set(key((prefix, "hash")), hash, ex=ttl)
                 pipe.set(key((prefix, "content")), content, ex=ttl)
@@ -211,7 +211,14 @@ async def download(
 
 
 @app.get("/play/{runtime}/{organization}/{repository}/{release}/{format}", response_class=HTMLResponse)
-async def index(runtime: str, organization: str, repository: str, release: str, format: str, request: Request):
+async def index(
+    runtime: str,
+    organization: str,
+    repository: str,
+    release: str,
+    format: str,
+    request: Request,
+):
     mapping = {
         "480p": (854, 480),
         "720p": (1280, 720),
@@ -259,10 +266,15 @@ async def static(
     if not media_type:
         media_type = "application/octet-stream"
 
+    now = datetime.utcnow()
+    timestamp = mktime(now.timetuple())
+    modified = format_date_time(timestamp)
+
     duration = timedelta(days=365).total_seconds()
     headers = {
-        "Cache-Control": f"public, max-age={int(duration)}",
+        "Cache-Control": f"public, max-age={int(duration)}, immutable",
         "Content-Disposition": f'inline; filename="{filename}"',
+        "Last-Modified": modified,
         "ETag": hash,
     }
 
