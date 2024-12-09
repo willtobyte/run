@@ -20,6 +20,7 @@ from wsgiref.handlers import format_date_time
 import docker
 import httpx
 import yaml
+from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -140,7 +141,7 @@ async def download(
     redis: Redis,
     url: str,
     filename: str,
-    ttl: timedelta = timedelta(hours=1),
+    ttl: timedelta = timedelta(days=365),
 ) -> tuple[AsyncGenerator[bytes, None], str] | None:
     namespace = url.split("://", 1)[-1]
 
@@ -216,7 +217,10 @@ async def index(request: Request):
     )
 
 
-@app.get("/play/{runtime}/{organization}/{repository}/{release}/{resolution}", response_class=HTMLResponse)
+router = APIRouter(prefix="/play/{runtime}/{organization}/{repository}/{release}/{resolution}")
+
+
+@router.get("", response_class=HTMLResponse)
 async def play(
     runtime: str,
     organization: str,
@@ -245,7 +249,7 @@ async def play(
     )
 
 
-@app.get("/play/{runtime}/{organization}/{repository}/{release}/{resolution}/{filename}")
+@router.get("/{filename}")
 async def dynamic(
     runtime: str,
     organization: str,
@@ -289,3 +293,6 @@ async def dynamic(
         media_type=media_type,
         headers=headers,
     )
+
+
+app.include_router(router)
