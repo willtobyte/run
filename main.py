@@ -19,6 +19,7 @@ from wsgiref.handlers import format_date_time
 
 import docker
 import httpx
+import yaml
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -30,7 +31,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 from redis.asyncio import Redis
 
 app = FastAPI()
@@ -48,13 +48,8 @@ app.add_middleware(
 clients = weakref.WeakSet()
 
 
-class Metadata(BaseModel):
-    runtime: str
-    organization: str
-    repository: str
-    release: str
-    format: str
-    remaining: str = ""
+with open("database.yaml", "rt") as f:
+    database = yaml.safe_load(f)
 
 
 async def online(clients: set) -> None:
@@ -210,8 +205,13 @@ async def download(
                     return stream(), content_hash
 
 
+@app.get("/")
+async def index():
+    return "ok"
+
+
 @app.get("/play/{runtime}/{organization}/{repository}/{release}/{format}", response_class=HTMLResponse)
-async def index(
+async def play(
     runtime: str,
     organization: str,
     repository: str,
@@ -240,7 +240,7 @@ async def index(
 
 
 @app.get("/play/{runtime}/{organization}/{repository}/{release}/{format}/{filename}")
-async def static(
+async def dynamic(
     runtime: str,
     organization: str,
     repository: str,
