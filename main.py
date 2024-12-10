@@ -19,15 +19,18 @@ from wsgiref.handlers import format_date_time
 
 import docker
 import httpx
+import py7zr
 import yaml
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Request
+from fastapi import Response
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -36,6 +39,7 @@ from redis.asyncio import Redis
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 templates = Jinja2Templates(directory="templates")
 
@@ -220,7 +224,7 @@ async def index(request: Request):
 router = APIRouter(prefix="/play/{runtime}/{organization}/{repository}/{release}/{resolution}")
 
 
-@router.get("", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse)
 async def play(
     runtime: str,
     organization: str,
@@ -296,3 +300,40 @@ async def dynamic(
 
 
 app.include_router(router)
+
+
+debugger = APIRouter(prefix="/debug")
+
+
+@debugger.get("/")
+async def serve_debug_html(request: Request):
+    return templates.TemplateResponse("debug.html", context={"request": request})
+
+
+@debugger.get("/bundle.7z")
+async def serve_bundle_7z():
+    stream = BytesIO()
+    with py7zr.SevenZipFile(stream, mode="w") as archive:
+        archive.writeall("/opt/game", arcname=".")
+    stream.seek(0)
+
+    return Response(
+        content=stream.read(),
+        media_type="application/x-7z-compressed",
+        headers={"Content-Disposition": "attachment; filename=bundle.7z"},
+    )
+
+
+@debugger.get("/{filename}")
+async def serve_engine_file(filename: str):
+    path = "/opt/engine"
+    match filename:
+        case "carimbo.js":
+            return FileResponse(f"{path}/{filename}", media_type="application/javascript")
+        case "carimbo.wasm":
+            return FileResponse(f"{path}/{filename}", media_type="application/wasm")
+        case _:
+            return Response(content="File not found", status_code=404)
+
+
+app.include_router(debugger)

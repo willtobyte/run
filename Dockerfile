@@ -1,4 +1,4 @@
-FROM python:3.13-slim AS base
+FROM python:3.13 AS base
 
 ENV PATH=/opt/venv/bin:$PATH
 ENV PYTHONUNBUFFERED=1
@@ -25,6 +25,7 @@ RUN <<EOF
   apt-get install --yes --no-install-recommends mime-support
   apt-get clean
   rm -rf /var/lib/apt/lists/*
+  mkdir -p /opt/engine /opt/game
 EOF
 
 ENTRYPOINT ["uvicorn"]
