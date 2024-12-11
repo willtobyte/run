@@ -2,7 +2,6 @@ import asyncio
 import hashlib
 import json
 import os
-import weakref
 import zipfile
 from asyncio import to_thread
 from datetime import datetime
@@ -46,7 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-clients = weakref.WeakSet()
+clients = set()
 
 
 with open("database.yaml", "rt") as f:
