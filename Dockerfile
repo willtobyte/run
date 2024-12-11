@@ -23,4 +23,4 @@ WORKDIR /opt/app
 COPY . .
 
 ENTRYPOINT ["uvicorn"]
-CMD ["main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "4"]
+CMD ["main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "1"]

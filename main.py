@@ -53,9 +53,17 @@ with open("database.yaml", "rt") as f:
     database = yaml.safe_load(f)
 
 
+# async def online(clients: set) -> None:
+#     message = {"event": {"topic": "online", "data": {"clients": len(clients)}}}
+#     await asyncio.gather(*(client.send_json(message) for client in clients))
+
+
 async def online(clients: set) -> None:
     message = {"event": {"topic": "online", "data": {"clients": len(clients)}}}
-    await asyncio.gather(*(client.send_json(message) for client in clients))
+    tasks = (asyncio.create_task(c.send_json(message)) for c in clients)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    failed = {c for c, r in zip(clients, results) if isinstance(r, Exception)}
+    clients.difference_update(failed)
 
 
 broadcast = SimpleNamespace(online=online)
@@ -78,7 +86,7 @@ async def websocket(websocket: WebSocket) -> None:
 
     try:
 
-        async def ping() -> None:
+        async def heartbeat() -> None:
             while True:
                 try:
                     await asyncio.sleep(10)
@@ -103,9 +111,17 @@ async def websocket(websocket: WebSocket) -> None:
                         case _:
                             pass
             except WebSocketDisconnect:
-                await disconnect(websocket)
+                pass
 
-        await asyncio.gather(ping(), relay())
+        _, pending = await asyncio.wait(
+            [
+                asyncio.create_task(heartbeat()),
+                asyncio.create_task(relay()),
+            ],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        for task in pending:
+            task.cancel()
     finally:
         await disconnect(websocket)
 
