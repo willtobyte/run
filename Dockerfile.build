@@ -1,18 +1,21 @@
-FROM ubuntu
+FROM debian
 WORKDIR /opt/playground
 ENV PATH="/opt/playground/.venv/bin:$PATH"
+
+COPY *.txt .
+COPY watch.py .
 
 RUN <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
 
 apt-get update
-apt-get upgrade --yes
-apt-get install --yes build-essential cmake python3-full
+apt-get upgrade -y
+apt-get install -y build-essential cmake python3-full
 
 python3 -m venv .venv
 . .venv/bin/activate
-pip install --no-cache-dir conan
+pip install -r requirements-dev.txt
 
 conan profile detect --force
 
@@ -28,7 +31,6 @@ os=Emscripten
 CODE
 EOF
 
-COPY watch.py .
 RUN mkdir -p /opt/carimbo
 
 ENTRYPOINT ["python3"]

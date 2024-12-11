@@ -54,27 +54,27 @@ with open("database.yaml", "rt") as f:
 
 
 async def online(clients: set) -> None:
-    message = json.dumps({"event": {"topic": "online", "data": {"clients": len(clients)}}})
-    await asyncio.gather(*(client.send(message) for client in clients))
+    message = {"event": {"topic": "online", "data": {"clients": len(clients)}}}
+    await asyncio.gather(*(client.send_json(message) for client in clients))
 
 
 broadcast = SimpleNamespace(online=online)
 
 
-async def add(connection: WebSocket) -> None:
-    clients.add(connection)
+async def add(websocket: WebSocket) -> None:
+    clients.add(websocket)
     await broadcast.online(clients)
 
 
-async def disconnect(connection: WebSocket) -> None:
-    clients.discard(connection)
+async def disconnect(websocket: WebSocket) -> None:
+    clients.discard(websocket)
     await broadcast.online(clients)
 
 
 @app.websocket("/socket")
 async def websocket(websocket: WebSocket) -> None:
     await websocket.accept()
-    clients.add(websocket)
+    await add(websocket)
 
     try:
 
@@ -84,7 +84,6 @@ async def websocket(websocket: WebSocket) -> None:
                     await asyncio.sleep(10)
                     await websocket.send_text(json.dumps({"command": "ping"}))
                 except (WebSocketDisconnect, asyncio.TimeoutError):
-                    await disconnect(websocket)
                     break
 
         async def relay() -> None:
