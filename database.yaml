@@ -1,14 +1,21 @@
 artifacts:
   - name: Henrique
     runtime: 1.0.2
-    organization: carimbolabs
+    organization: pigmentolabs
     repository: henrique
     release: 0.0.27
     resolution: 480p
 
   - name: MegaRick
     runtime: 1.0.10
-    organization: carimbolabs
+    organization: pigmentolabs
     repository: megarick
     release: 1.0.7
     resolution: 720p
+    authors:
+      - name: Rodrigo Delduca
+        role: Developer & Game Designer
+        website: https://rodrigodelduca.com.br
+      - name: Aline Cardoso
+        role: Pixel Artist
+        website: https://www.fiverr.com/yuugenpixie/create-pixel-art-of-your-choice

@@ -1,0 +1,35 @@
+FROM ubuntu
+WORKDIR /opt/playground
+ENV PATH="/opt/playground/.venv/bin:$PATH"
+
+RUN <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+apt-get update
+apt-get upgrade --yes
+apt-get install --yes build-essential cmake python3-full
+
+python3 -m venv .venv
+. .venv/bin/activate
+pip install --no-cache-dir conan
+
+conan profile detect --force
+
+cat <<CODE >> ~/.conan2/profiles/webassembly
+include(default)
+
+[settings]
+arch=wasm
+os=Emscripten
+
+[tool_requires]
+*: emsdk/3.1.72
+CODE
+EOF
+
+COPY watch.py .
+RUN mkdir -p /opt/carimbo
+
+ENTRYPOINT ["python3"]
+CMD ["watch.py"]

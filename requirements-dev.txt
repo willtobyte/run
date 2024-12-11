@@ -1,0 +1,7 @@
+-r requirements.txt
+
+py7zr==0.22.0
+rx==3.2.0
+watchgod==0.8.2
+
+ruff==0.8.2

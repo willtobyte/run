@@ -1,0 +1,71 @@
+FROM python:3.13 AS base
+
+ENV PATH=/opt/venv/bin:$PATH
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+FROM base AS venv
+WORKDIR /opt/venv
+COPY *.txt .
+RUN <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+python -m venv .
+. bin/activate
+pip install --no-cache-dir --requirement requirements-dev.txt
+EOF
+
+FROM base
+RUN mkdir -p /opt/engine /opt/game
+WORKDIR /opt/venv
+COPY --from=venv /opt/venv .
+WORKDIR /opt/app
+COPY . .
+RUN <<EOF
+cat <<CODE >> main.py
+import py7zr
+
+playground = APIRouter(prefix="/playground")
+
+
+@playground.get("/")
+async def debug(request: Request):
+    return templates.TemplateResponse("playground.html", context={"request": request})
+
+
+@playground.get("/bundle.7z")
+async def bundle():
+    stream = BytesIO()
+    with py7zr.SevenZipFile(stream, mode="w") as archive:
+        archive.writeall("/opt/game", arcname=".")
+    stream.seek(0)
+
+    return Response(
+        content=stream.read(),
+        media_type="application/x-7z-compressed",
+        headers={"Content-Disposition": "attachment; filename=bundle.7z"},
+    )
+
+
+@playground.get("/{filename}")
+async def assets(filename: str):
+    assets = {
+        "carimbo.js": "application/javascript",
+        "carimbo.wasm": "application/wasm",
+    }
+
+    path = f"/opt/engine/{filename}"
+    media_type = assets.get(filename)
+    if media_type:
+        return FileResponse(path, media_type=media_type)
+
+    return Response(content="File not found", status_code=404)
+
+
+app.include_router(playground)
+CODE
+EOF
+
+ENTRYPOINT ["uvicorn"]
+CMD ["main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "4"]

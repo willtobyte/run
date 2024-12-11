@@ -1,7 +1,6 @@
 import asyncio
 import hashlib
 import json
-import mimetypes
 import os
 import weakref
 import zipfile
@@ -19,18 +18,15 @@ from wsgiref.handlers import format_date_time
 
 import docker
 import httpx
-import py7zr
 import yaml
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Request
-from fastapi import Response
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -266,8 +262,13 @@ async def dynamic(
     match filename:
         case "bundle.7z":
             url = f"https://github.com/{organization}/{repository}/releases/download/v{release}/bundle.7z"
-        case "carimbo.js" | "carimbo.wasm":
-            url = f"https://github.com/carimbolabs/carimbo/releases/download/v{runtime}/WebAssembly.zip"
+            media_type = "application/x-7z-compressed"
+        case "carimbo.js":
+            url = f"https://github.com/pigmentolabs/carimbo/releases/download/v{runtime}/WebAssembly.zip"
+            media_type = "application/javascript"
+        case "carimbo.wasm":
+            url = f"https://github.com/pigmentolabs/carimbo/releases/download/v{runtime}/WebAssembly.zip"
+            media_type = "application/wasm"
         case _:
             raise HTTPException(status_code=404)
 
@@ -276,9 +277,6 @@ async def dynamic(
         raise HTTPException(status_code=404)
 
     content, hash = result
-    media_type, _ = mimetypes.guess_type(filename)
-    if not media_type:
-        media_type = "application/octet-stream"
 
     now = datetime.utcnow()
     timestamp = mktime(now.timetuple())
@@ -300,40 +298,3 @@ async def dynamic(
 
 
 app.include_router(router)
-
-
-debugger = APIRouter(prefix="/debug")
-
-
-@debugger.get("/")
-async def serve_debug_html(request: Request):
-    return templates.TemplateResponse("debug.html", context={"request": request})
-
-
-@debugger.get("/bundle.7z")
-async def serve_bundle_7z():
-    stream = BytesIO()
-    with py7zr.SevenZipFile(stream, mode="w") as archive:
-        archive.writeall("/opt/game", arcname=".")
-    stream.seek(0)
-
-    return Response(
-        content=stream.read(),
-        media_type="application/x-7z-compressed",
-        headers={"Content-Disposition": "attachment; filename=bundle.7z"},
-    )
-
-
-@debugger.get("/{filename}")
-async def serve_engine_file(filename: str):
-    path = "/opt/engine"
-    match filename:
-        case "carimbo.js":
-            return FileResponse(f"{path}/{filename}", media_type="application/javascript")
-        case "carimbo.wasm":
-            return FileResponse(f"{path}/{filename}", media_type="application/wasm")
-        case _:
-            return Response(content="File not found", status_code=404)
-
-
-app.include_router(debugger)
