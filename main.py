@@ -52,11 +52,6 @@ with open("database.yaml", "rt") as f:
     database = yaml.safe_load(f)
 
 
-# async def online(clients: set) -> None:
-#     message = {"event": {"topic": "online", "data": {"clients": len(clients)}}}
-#     await asyncio.gather(*(client.send_json(message) for client in clients))
-
-
 async def online(clients: set) -> None:
     message = {"event": {"topic": "online", "data": {"clients": len(clients)}}}
     tasks = (asyncio.create_task(c.send_json(message)) for c in clients)
