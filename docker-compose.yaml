@@ -11,8 +11,6 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ../sandbox:/opt/game:ro
-      - ../carimbo/build:/opt/engine:ro
   redis:
     image: redis:latest
     container_name: redis

@@ -24,10 +24,87 @@ WORKDIR /opt/app
 COPY . .
 RUN <<EOF
 cat <<CODE >> main.py
-import py7zr
+import asyncio
+import io
 
+import py7zr
+from fastapi import APIRouter
+from fastapi import FastAPI
+from fastapi import Request
 from fastapi import Response
 from fastapi.responses import FileResponse
+
+from rx.disposable import CompositeDisposable
+from rx.operators import debounce
+from rx.scheduler.eventloop import AsyncIOScheduler
+from rx.subject import Subject
+from watchdog.events import FileSystemEventHandler
+from watchdog.events import PatternMatchingEventHandler
+from watchdog.observers import Observer
+
+
+def build() -> None:
+    print("building...")
+
+
+class FilteredEventHandler(PatternMatchingEventHandler):
+    def __init__(self, notifier: Subject):
+        super().__init__(patterns=["*.js", "*.wasm"], ignore_directories=True)
+        self.notifier = notifier
+
+    def on_modified(self, event):
+        self.notifier.on_next(0)
+
+
+class AllFilesEventHandler(FileSystemEventHandler):
+    def __init__(self, notifier: Subject):
+        self.notifier = notifier
+
+    def on_modified(self, event):
+        self.notifier.on_next(0)
+
+
+def observe(path: str, handler: FileSystemEventHandler) -> Observer:
+    observer = Observer()
+    observer.schedule(handler, path, recursive=True)
+    observer.start()
+    return observer
+
+
+@app.on_event("startup")
+async def startup_event():
+    path = "/opt/engine"
+    notifier = Subject()
+    loop = asyncio.get_event_loop()
+    scheduler = AsyncIOScheduler(loop=loop)
+
+    engine_notifier = Subject()
+    engine_subscription = engine_notifier.pipe(debounce(3.0, scheduler=scheduler)).subscribe(lambda _: build())
+    engine_handler = FilteredEventHandler(engine_notifier)
+    engine_observer = observe("/opt/engine", engine_handler)
+
+    game_notifier = Subject()
+    game_subscription = game_notifier.pipe(debounce(3.0, scheduler=scheduler)).subscribe(lambda _: build())
+    game_handler = AllFilesEventHandler(game_notifier)
+    game_observer = observe("/opt/game", game_handler)
+
+    app.state.observers = [engine_observer, game_observer]
+    app.state.subscriptions = CompositeDisposable(engine_subscription, game_subscription)
+    app.state.notifiers = [engine_notifier, game_notifier]
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    if hasattr(app.state, "observers"):
+        for observer in app.state.observers:
+            observer.stop()
+            observer.join()
+    if hasattr(app.state, "subscriptions"):
+        app.state.subscriptions.dispose()
+    if hasattr(app.state, "notifiers"):
+        for notifier in app.state.notifiers:
+            notifier.on_completed()
+
 
 playground = APIRouter(prefix="/playground")
 
@@ -39,7 +116,7 @@ async def debug(request: Request):
 
 @playground.get("/bundle.7z")
 async def bundle():
-    stream = BytesIO()
+    stream = io.BytesIO()
     with py7zr.SevenZipFile(stream, mode="w") as archive:
         archive.writeall("/opt/game", arcname=".")
     stream.seek(0)
@@ -71,4 +148,4 @@ CODE
 EOF
 
 ENTRYPOINT ["uvicorn"]
-CMD ["main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "4"]
+CMD ["main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "1"]
