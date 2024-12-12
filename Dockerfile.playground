@@ -29,19 +29,19 @@ import io
 
 import py7zr
 from fastapi import APIRouter
-from fastapi import FastAPI
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import FileResponse
-
 from rx.disposable import CompositeDisposable
 from rx.operators import debounce
 from rx.scheduler.eventloop import AsyncIOScheduler
 from rx.subject import Subject
+from starlette.types import Receive
+from starlette.types import Scope
+from starlette.types import Send
 from watchdog.events import FileSystemEventHandler
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
-
 
 def build() -> None:
     print("building...")
@@ -73,8 +73,6 @@ def observe(path: str, handler: FileSystemEventHandler) -> Observer:
 
 @app.on_event("startup")
 async def startup_event():
-    path = "/opt/engine"
-    notifier = Subject()
     loop = asyncio.get_event_loop()
     scheduler = AsyncIOScheduler(loop=loop)
 
@@ -104,6 +102,11 @@ async def shutdown_event():
     if hasattr(app.state, "notifiers"):
         for notifier in app.state.notifiers:
             notifier.on_completed()
+
+class SafeFileResponse(FileResponse):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        self.set_stat_headers = lambda *args, **kwargs: None
+        await super().__call__(scope, receive, send)
 
 
 playground = APIRouter(prefix="/playground")
@@ -138,7 +141,7 @@ async def assets(filename: str):
     path = f"/opt/engine/{filename}"
     media_type = assets.get(filename)
     if media_type:
-        return FileResponse(path, media_type=media_type)
+        return SafeFileResponse(path, media_type=media_type)
 
     return Response(content="File not found", status_code=404)
 
