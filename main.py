@@ -216,7 +216,7 @@ async def download(
                     return stream(), content_hash
 
 
-@app.head("/healthcheck", status_code=status.HTTP_201_CREATED)
+@app.head("/", status_code=status.HTTP_201_CREATED)
 async def healthcheck(redis: Redis = Depends(get_redis)):
     await redis.ping()
     return

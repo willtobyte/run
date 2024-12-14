@@ -1,7 +1,0 @@
-services:
-  app:
-    build:
-      dockerfile: Dockerfile.playground
-    volumes:
-      - ../sandbox:/opt/game:ro
-      - ../carimbo/build:/opt/engine:ro
