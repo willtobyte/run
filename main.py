@@ -25,6 +25,7 @@ from fastapi import HTTPException
 from fastapi import Request
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
+from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.responses import StreamingResponse
@@ -213,6 +214,12 @@ async def download(
                         yield data
 
                     return stream(), content_hash
+
+
+@app.head("/healthcheck", status_code=status.HTTP_201_CREATED)
+async def healthcheck(redis: Redis = Depends(get_redis)):
+    await redis.ping()
+    return
 
 
 @app.get("/", response_class=HTMLResponse)
