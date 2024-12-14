@@ -119,9 +119,17 @@ async def debug(request: Request):
 
 @playground.get("/bundle.7z")
 async def bundle():
+    source = "/opt/game"
     stream = io.BytesIO()
     with py7zr.SevenZipFile(stream, mode="w") as archive:
-        archive.writeall("/opt/game", arcname=".")
+        for root, dirs, files in os.walk(source):
+            if ".git" in dirs:
+                dirs.remove(".git")
+            for file in files:
+                path = os.path.join(root, file)
+                arcname = os.path.relpath(path, source)
+                archive.write(path, arcname)
+
     stream.seek(0)
 
     return Response(
