@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import hashlib
 import json
 import os
@@ -47,6 +48,7 @@ app.add_middleware(
 )
 
 clients = set()
+lock = asyncio.Lock()
 
 
 with open("database.yaml", "rt") as f:
@@ -65,13 +67,15 @@ broadcast = SimpleNamespace(online=online)
 
 
 async def add(websocket: WebSocket) -> None:
-    clients.add(websocket)
-    await broadcast.online(clients)
+    async with lock:
+        clients.add(websocket)
+        await broadcast.online(clients)
 
 
 async def disconnect(websocket: WebSocket) -> None:
-    clients.discard(websocket)
-    await broadcast.online(clients)
+    async with lock:
+        clients.discard(websocket)
+        await broadcast.online(clients)
 
 
 @app.websocket("/socket")
@@ -92,19 +96,22 @@ async def websocket(websocket: WebSocket) -> None:
         async def relay() -> None:
             try:
                 async for message in websocket.iter_text():
-                    match json.loads(message):
-                        case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
-                            response = {"rpc": {"response": {"id": id}}}
-                            try:
-                                module = import_module(f"procedures.{method}")
-                                func = partial(module.run, **arguments)
-                                result = await to_thread(func)
-                                response["rpc"]["response"]["result"] = result
-                            except Exception as exc:
-                                response["rpc"]["response"]["error"] = str(exc)
-                            await websocket.send_text(json.dumps(response))
-                        case _:
-                            pass
+                    try:
+                        match json.loads(message):
+                            case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
+                                response = {"rpc": {"response": {"id": id}}}
+                                try:
+                                    module = import_module(f"procedures.{method}")
+                                    func = partial(module.run, **arguments)
+                                    result = await to_thread(func)
+                                    response["rpc"]["response"]["result"] = result
+                                except Exception as exc:
+                                    response["rpc"]["response"]["error"] = str(exc)
+                                await websocket.send_text(json.dumps(response))
+                            case _:
+                                pass
+                    except json.JSONDecodeError:
+                        await websocket.send_text(json.dumps({"error": "Invalid JSON"}))
             except WebSocketDisconnect:
                 pass
 
@@ -164,7 +171,7 @@ async def download(
         data, hash = await pipe.execute()
 
     match data, hash:
-        case (bytes() as data, bytes() as hash) if all(value and value.strip() for value in (data, hash)):
+        case (bytes as data, bytes as hash) if all(value and value.strip() for value in (data, hash)):
 
             async def stream():
                 yield data
@@ -191,7 +198,7 @@ async def download(
                         result = None
                         for name in zf.namelist():
                             content = zf.read(name)
-                            content_hash = hashlib.sha1(content).hexdigest()
+                            content_hash = base64.b64encode(hashlib.sha256(content).digest()).decode()
                             store(pipe, (namespace, name), content, content_hash)
                             if name == filename:
 
@@ -205,7 +212,7 @@ async def download(
 
                 case _:
                     data = response.content
-                    content_hash = hashlib.sha1(data).hexdigest()
+                    content_hash = base64.b64encode(hashlib.sha256(data).digest()).decode()
                     store(pipe, (namespace, filename), data, content_hash)
 
                     await pipe.execute()
