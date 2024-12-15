@@ -28,4 +28,4 @@ jobs:
           DOCKER_HOST: ssh://root@${{ secrets.HETZNER_IP }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
         run: |
-          docker compose --file compose.yaml --file cloudflare.yaml --file logging.yaml up --build -d
+          docker compose --file compose.yaml --file cloudflare.yaml --file logging.yaml up --build --force-recreate --deatach
