@@ -32,13 +32,6 @@ jobs:
 
           docker compose --file compose.yaml --file cloudflare.yaml --file logging.yaml down --remove-orphans
 
-          if docker ps -a --format '{{.Names}}' | grep -Eq '^redis$'; then
-            echo "Removing existing 'redis' container..."
-            docker rm -f redis
-          else
-            echo "'redis' container does not exist. No action needed."
-          fi
-
           docker system prune --all --force
 
           docker compose --file compose.yaml --file cloudflare.yaml --file logging.yaml up --build --force-recreate --detach
