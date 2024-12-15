@@ -167,13 +167,11 @@ async def download(
         pipe.get(key((namespace, filename, "hash")))
         data, hash = await pipe.execute()
 
-    match data, hash:
-        case (bytes as data, bytes as hash) if all(value and value.strip() for value in (data, hash)):
+    if isinstance(data, bytes) and isinstance(hash, bytes) and data.strip() and hash.strip():
+        async def stream() -> AsyncGenerator[bytes, None]:
+            yield data
 
-            async def stream():
-                yield data
-
-            return stream(), hash.decode()
+        return stream(), hash.decode()
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
