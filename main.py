@@ -96,22 +96,19 @@ async def websocket(websocket: WebSocket) -> None:
         async def relay() -> None:
             try:
                 async for message in websocket.iter_text():
-                    try:
-                        match json.loads(message):
-                            case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
-                                response = {"rpc": {"response": {"id": id}}}
-                                try:
-                                    module = import_module(f"procedures.{method}")
-                                    func = partial(module.run, **arguments)
-                                    result = await to_thread(func)
-                                    response["rpc"]["response"]["result"] = result
-                                except Exception as exc:
-                                    response["rpc"]["response"]["error"] = str(exc)
-                                await websocket.send_text(json.dumps(response))
-                            case _:
-                                pass
-                    except json.JSONDecodeError:
-                        await websocket.send_text(json.dumps({"error": "Invalid JSON"}))
+                    match json.loads(message):
+                        case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
+                            response = {"rpc": {"response": {"id": id}}}
+                            try:
+                                module = import_module(f"procedures.{method}")
+                                func = partial(module.run, **arguments)
+                                result = await to_thread(func)
+                                response["rpc"]["response"]["result"] = result
+                            except Exception as exc:
+                                response["rpc"]["response"]["error"] = str(exc)
+                            await websocket.send_text(json.dumps(response))
+                        case _:
+                            pass
             except WebSocketDisconnect:
                 pass
 
