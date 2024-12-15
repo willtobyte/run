@@ -30,11 +30,11 @@ jobs:
         run: |
           set -e
 
-          docker compose --file compose.yaml --file cloudflare.yaml --file logging.yaml down --remove-orphans
+          docker compose --file compose.yaml --file production.yaml down --remove-orphans
 
           docker system prune --all --force
 
-          docker compose --file compose.yaml --file cloudflare.yaml --file logging.yaml up --build --force-recreate --detach
+          docker compose --file compose.yaml --file production.yaml up --build --force-recreate --detach
 
           echo "Listing all Docker containers:"
           docker ps -a

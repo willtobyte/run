@@ -9,5 +9,10 @@ services:
     logging:
       <<: *logging
   cloudflare:
+    image: cloudflare/cloudflared:latest
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TOKEN}
+    command: tunnel --no-autoupdate run
+    restart: unless-stopped
     logging:
       <<: *logging

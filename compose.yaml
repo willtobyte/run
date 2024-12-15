@@ -6,8 +6,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    ports:
-      - "3000:3000"
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -19,8 +17,6 @@ services:
       interval: 1s
       timeout: 3s
       retries: 9
-    ports:
-      - "6379:6379"
     restart: unless-stopped
     volumes:
       - storage:/data

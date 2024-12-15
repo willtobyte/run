@@ -2,6 +2,11 @@ services:
   app:
     build:
       dockerfile: Dockerfile.playground
+    ports:
+      - "3000:3000"
     volumes:
       - ../sandbox:/opt/game:ro
       - ../carimbo/build:/opt/engine:ro
+  redis:
+    ports:
+      - "6379:6379"
