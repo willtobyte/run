@@ -28,6 +28,8 @@ jobs:
           DOCKER_HOST: ssh://root@${{ secrets.HETZNER_IP }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
         run: |
+          docker compose --file compose.yaml --file cloudflare.yaml --file logging.yaml down
+
           if docker ps -a --format '{{.Names}}' | grep -Eq '^redis$'; then
             echo "Removing existing 'redis' container..."
             docker rm -f redis
@@ -38,3 +40,6 @@ jobs:
           docker system prune --all --force
 
           docker compose --file compose.yaml --file cloudflare.yaml --file logging.yaml up --build --force-recreate --detach
+
+          echo "Listing all Docker containers:"
+          docker ps -a
