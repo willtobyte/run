@@ -33,6 +33,9 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from redis.asyncio import Redis
+from tenacity import retry
+from tenacity import stop_after_attempt
+from tenacity import wait_fixed
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -151,6 +154,7 @@ async def get_redis() -> Redis:
     return redis
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
 async def download(
     redis: Redis,
     url: str,
@@ -168,6 +172,7 @@ async def download(
         data, hash = await pipe.execute()
 
     if isinstance(data, bytes) and isinstance(hash, bytes) and data.strip() and hash.strip():
+
         async def stream() -> AsyncGenerator[bytes, None]:
             yield data
 
