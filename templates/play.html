@@ -63,30 +63,22 @@
 {% block content %}
   <div class="container">
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
-    <img id="hourglass" src="/static/hourglass.webp" alt="Loading" loading="lazy" />
   </div>
 
   <script>
-    hourglass.classList.add("display");
-
     var Module = {
       canvas: document.getElementById("canvas"),
       noInitialRun: true,
       onRuntimeInitialized: () => {
-        const hourglass = document.getElementById("hourglass");
-
         fetch("bundle.7z")
           .then(response => response.arrayBuffer())
           .then(data => {
             const uint8View = new Uint8Array(data);
             FS.writeFile("/bundle.7z", uint8View);
             Module.callMain();
-            hourglass.classList.remove("display");
           });
       },
     };
-
-    document.getElementById("hourglass").classList.add("display");
   </script>
   <script defer src="carimbo.js"></script>
 {% endblock %}
