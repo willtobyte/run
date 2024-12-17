@@ -24,13 +24,13 @@ from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Request
+from fastapi import Response
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.responses import StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from redis.asyncio import Redis
 from tenacity import retry
@@ -77,6 +77,11 @@ async def disconnect(websocket: WebSocket) -> None:
     async with lock:
         clients.discard(websocket)
         await broadcast.online(clients)
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    return Response(content=b"", media_type="image/x-icon")
 
 
 @app.websocket("/socket")
