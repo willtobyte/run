@@ -7,15 +7,12 @@ artifacts:
     resolution: 480p
 
   - name: MegaRick
-    runtime: 1.0.21
+    runtime: 1.0.23
     organization: willtobyte
     repository: megarick
-    release: 1.0.17
+    release: 1.0.18
     resolution: 720p
     authors:
       - name: Rodrigo Delduca
         role: Developer & Game Designer
         website: https://rodrigodelduca.com.br
-      - name: Aline Cardoso
-        role: Pixel Artist
-        website: https://www.fiverr.com/yuugenpixie/create-pixel-art-of-your-choice
