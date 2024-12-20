@@ -51,65 +51,47 @@
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
   </div>
 
-  <script>
-    window.onerror = (message, source, lineno, colno, error) => {
-      console.error(`Global Error: ${message} at ${source}:${lineno}:${colno}\n${error?.stack || ''}`);
+  <script type="module">
+    window.onerror = function(message, source, lineno, colno, error) {
+      console.error(`Global Error: ${message} at ${source}:${lineno}:${colno}\n${error ? error.stack : ''}`);
     };
 
-    window.onunhandledrejection = (event) => {
+    window.onunhandledrejection = function(event) {
       console.error(`Unhandled Promise Rejection: ${event.reason}`);
     };
 
-    (async () => {
-      try {
-        const results = await Promise.allSettled([
-          fetch("carimbo.wasm"),
-          fetch("bundle.7z"),
-        ]);
+    var responses = await Promise.all([
+      fetch("carimbo.wasm"),
+      fetch("bundle.7z"),
+    ]);
 
-        const webassemblyResponse = results.find(result => result.status === "fulfilled" && result.value.url.includes("carimbo.wasm"))?.value;
-        const bundleResponse = results.find(result => result.status === "fulfilled" && result.value.url.includes("bundle.7z"))?.value;
+    var webassemblyResponse = responses[0];
+    var bundleResponse = responses[1];
 
-        if (!webassemblyResponse) {
-          console.error("Failed to fetch carimbo.wasm");
-          return;
-        }
+    if (!webassemblyResponse.ok) {
+      throw new Error(`Falha ao buscar carimbo.wasm: ${webassemblyResponse.status} ${webassemblyResponse.statusText}`);
+    }
 
-        if (!bundleResponse) {
-          console.error("Failed to fetch bundle.7z");
-          return;
-        }
+    if (!bundleResponse.ok) {
+      throw new Error(`Falha ao buscar bundle.7z: ${bundleResponse.status} ${bundleResponse.statusText}`);
+    }
 
-        const [webassembly, bundle] = await Promise.all([
-          webassemblyResponse.arrayBuffer(),
-          bundleResponse.arrayBuffer(),
-        ]);
+    var webassembly = await webassemblyResponse.arrayBuffer();
+    var bundle = await bundleResponse.arrayBuffer();
 
-        var Module = {
-          binary: webassembly,
-          canvas: document.getElementById("canvas"),
-          noInitialRun: true,
-          onRuntimeInitialized: () => {
-            try {
-              FS.writeFile("/bundle.7z", new Uint8Array(bundle));
-              Module.callMain();
-            } catch (error) {
-              console.error(`Error processing bundle.7z: ${error.message}`, error.stack);
-            }
-          },
-        };
+    var Module = {
+      binary: webassembly,
+      canvas: document.getElementById("canvas"),
+      noInitialRun: true,
+      onRuntimeInitialized: function() {
+        FS.writeFile("/bundle.7z", new Uint8Array(bundle));
+        Module.callMain();
+      },
+    };
 
-        const script = document.createElement("script");
-        script.src = "carimbo.js";
-        script.defer = true;
-        script.onerror = () => {
-          console.error("Failed to load carimbo.js");
-        };
-        document.body.appendChild(script);
-
-      } catch (error) {
-        console.error(`Error during initialization: ${error.message}`, error.stack);
-      }
-    })();
+    var script = document.createElement("script");
+    script.src = "carimbo.js";
+    script.defer = true;
+    document.body.appendChild(script);
   </script>
 {% endblock %}
