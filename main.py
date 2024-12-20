@@ -183,8 +183,7 @@ async def download(
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
-        if not response.is_success:
-            return None
+        response.raise_for_status()
 
         ext = os.path.splitext(urlparse(url).path)[-1].lower()
 
