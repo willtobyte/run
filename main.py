@@ -242,6 +242,12 @@ async def index(request: Request):
     )
 
 
+@app.get("/flush")
+async def flush(redis: Redis = Depends(get_redis)):
+    await redis.flushdb()
+    return Response(status_code=status.HTTP_200_OK)
+
+
 router = APIRouter(prefix="/play/{runtime}/{organization}/{repository}/{release}/{resolution}")
 
 
