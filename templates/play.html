@@ -19,7 +19,6 @@
       justify-content: center;
       height: 100vh;
       line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
       overflow: hidden;
     }
 
@@ -53,19 +52,64 @@
   </div>
 
   <script>
-    var Module = {
-      canvas: document.getElementById("canvas"),
-      noInitialRun: true,
-      onRuntimeInitialized: () => {
-        fetch("bundle.7z")
-          .then(response => response.arrayBuffer())
-          .then(data => {
-            const uint8View = new Uint8Array(data);
-            FS.writeFile("/bundle.7z", uint8View);
-            Module.callMain();
-          });
-      },
+    window.onerror = (message, source, lineno, colno, error) => {
+      console.error(`Global Error: ${message} at ${source}:${lineno}:${colno}\n${error?.stack || ''}`);
     };
+
+    window.onunhandledrejection = (event) => {
+      console.error(`Unhandled Promise Rejection: ${event.reason}`);
+    };
+
+    (async () => {
+      try {
+        const results = await Promise.allSettled([
+          fetch("carimbo.wasm"),
+          fetch("bundle.7z"),
+        ]);
+
+        const webassemblyResponse = results.find(result => result.status === "fulfilled" && result.value.url.includes("carimbo.wasm"))?.value;
+        const bundleResponse = results.find(result => result.status === "fulfilled" && result.value.url.includes("bundle.7z"))?.value;
+
+        if (!webassemblyResponse) {
+          console.error("Failed to fetch carimbo.wasm");
+          return;
+        }
+
+        if (!bundleResponse) {
+          console.error("Failed to fetch bundle.7z");
+          return;
+        }
+
+        const [binawebassemblyry, bundle] = await Promise.all([
+          webassemblyResponse.arrayBuffer(),
+          bundleResponse.arrayBuffer(),
+        ]);
+
+        const Module = {
+          binary: webassembly,
+          canvas: document.getElementById("canvas"),
+          noInitialRun: true,
+          onRuntimeInitialized: () => {
+            try {
+              FS.writeFile("/bundle.7z", new Uint8Array(bundle));
+              Module.callMain();
+            } catch (error) {
+              console.error(`Error processing bundle.7z: ${error.message}`, error.stack);
+            }
+          },
+        };
+
+        const script = document.createElement("script");
+        script.src = "carimbo.js";
+        script.defer = true;
+        script.onerror = () => {
+          console.error("Failed to load carimbo.js");
+        };
+        document.body.appendChild(script);
+
+      } catch (error) {
+        console.error(`Error during initialization: ${error.message}`, error.stack);
+      }
+    })();
   </script>
-  <script defer src="carimbo.js"></script>
 {% endblock %}
