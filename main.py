@@ -244,7 +244,7 @@ async def index(request: Request):
 
 @app.get("/flush")
 async def flush(redis: Redis = Depends(get_redis)):
-    await redis.flushdb()
+    await redis.flushall()
     return Response(status_code=status.HTTP_200_OK)
 
 
