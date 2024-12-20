@@ -69,6 +69,14 @@
     var bundleResponse = responses[1];
 
     if (!webassemblyResponse.ok) {
+      throw new Error(`Failed to fetch carimbo.wasm: ${webassemblyResponse.status} ${webassemblyResponse.statusText}`);
+    }
+
+    if (!bundleResponse.ok) {
+      throw new Error(`Failed to fetch bundle.7z: ${bundleResponse.status} ${bundleResponse.statusText}`);
+    }
+
+    if (!webassemblyResponse.ok) {
       throw new Error(`Falha ao buscar carimbo.wasm: ${webassemblyResponse.status} ${webassemblyResponse.statusText}`);
     }
 
