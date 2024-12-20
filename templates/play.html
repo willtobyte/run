@@ -2,10 +2,8 @@
 
 {% block head %}
   <base href="{{ url }}" />
-  <link rel="preload" href="carimbo.js" as="script" type="application/javascript" crossorigin="anonymous" />
   <link rel="preload" href="carimbo.wasm" as="fetch" type="application/wasm" crossorigin="anonymous" />
   <link rel="preload" href="bundle.7z" as="fetch" type="application/x-7z-compressed" crossorigin="anonymous" />
-
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -52,53 +50,30 @@
   </div>
 
   <script type="module">
-    window.onerror = function(message, source, lineno, colno, error) {
+    window.onerror = (message, source, lineno, colno, error) => {
       console.error(`Global Error: ${message} at ${source}:${lineno}:${colno}\n${error ? error.stack : ''}`);
     };
 
-    window.onunhandledrejection = function(event) {
+    window.onunhandledrejection = (event) => {
       console.error(`Unhandled Promise Rejection: ${event.reason}`);
     };
 
-    var responses = await Promise.all([
-      fetch("carimbo.wasm"),
-      fetch("bundle.7z"),
-    ]);
+    const canvas = document.getElementById("canvas");
 
-    var webassemblyResponse = responses[0];
-    var bundleResponse = responses[1];
+    const response = await fetch("bundle.7z");
+    const bundle = await response.arrayBuffer();
 
-    if (!webassemblyResponse.ok) {
-      throw new Error(`Failed to fetch carimbo.wasm: ${webassemblyResponse.status} ${webassemblyResponse.statusText}`);
-    }
-
-    if (!bundleResponse.ok) {
-      throw new Error(`Failed to fetch bundle.7z: ${bundleResponse.status} ${bundleResponse.statusText}`);
-    }
-
-    if (!webassemblyResponse.ok) {
-      throw new Error(`Falha ao buscar carimbo.wasm: ${webassemblyResponse.status} ${webassemblyResponse.statusText}`);
-    }
-
-    if (!bundleResponse.ok) {
-      throw new Error(`Falha ao buscar bundle.7z: ${bundleResponse.status} ${bundleResponse.statusText}`);
-    }
-
-    var webassembly = await webassemblyResponse.arrayBuffer();
-    var bundle = await bundleResponse.arrayBuffer();
-
-    var Module = {
-      binary: webassembly,
-      canvas: document.getElementById("canvas"),
+    window.Module = {
+      canvas,
       noInitialRun: true,
-      onRuntimeInitialized: function() {
+      onRuntimeInitialized: () => {
         FS.writeFile("/bundle.7z", new Uint8Array(bundle));
         Module.callMain();
       },
     };
 
-    var script = document.createElement("script");
-    script.src = "carimbo.js";
+    const script = document.createElement('script');
+    script.src = 'carimbo.js';
     script.defer = true;
     document.body.appendChild(script);
   </script>
