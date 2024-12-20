@@ -80,7 +80,7 @@
           return;
         }
 
-        const [binawebassemblyry, bundle] = await Promise.all([
+        const [webassembly, bundle] = await Promise.all([
           webassemblyResponse.arrayBuffer(),
           bundleResponse.arrayBuffer(),
         ]);
