@@ -36,24 +36,27 @@
   <body>
     <div class="container">
       <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
-      <script>
+
+      <script type="module">
         const canvas = document.getElementById("canvas");
 
-        var Module = {
+        const response = await fetch("bundle.7z");
+        const bundle = await response.arrayBuffer();
+
+        window.Module = {
           canvas,
           noInitialRun: true,
           onRuntimeInitialized: () => {
-            fetch("bundle.7z")
-              .then((response) => response.arrayBuffer())
-              .then((data) => {
-                const uint8View = new Uint8Array(data);
-                FS.writeFile("/bundle.7z", uint8View);
-                Module.callMain();
-              });
+            FS.writeFile("/bundle.7z", new Uint8Array(bundle));
+            Module.callMain();
           },
         };
+
+        const script = document.createElement('script');
+        script.src = 'carimbo.js';
+        script.defer = true;
+        document.body.appendChild(script);
       </script>
-      <script src="carimbo.js"></script>
     </div>
   </body>
 </html>
