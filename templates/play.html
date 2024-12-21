@@ -50,14 +50,6 @@
   </div>
 
   <script type="module">
-    window.onerror = (message, source, lineno, colno, error) => {
-      console.error(`Global Error: ${message} at ${source}:${lineno}:${colno}\n${error ? error.stack : ''}`);
-    };
-
-    window.onunhandledrejection = (event) => {
-      console.error(`Unhandled Promise Rejection: ${event.reason}`);
-    };
-
     const canvas = document.getElementById("canvas");
 
     const response = await fetch("bundle.7z");
