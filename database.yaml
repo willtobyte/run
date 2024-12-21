@@ -10,7 +10,7 @@ artifacts:
     runtime: 1.0.26
     organization: willtobyte
     repository: megarick
-    release: 1.0.23
+    release: 1.0.24
     resolution: 720p
     authors:
       - name: Rodrigo Delduca
