@@ -137,7 +137,7 @@ async def bundle():
                         archive.write(file_path, arcname)
 
             buffer.seek(0)
-            while chunk := buffer.read(8192 * 4):
+            while chunk := buffer.read(8192 * 16):
                 yield chunk
 
     return StreamingResponse(
