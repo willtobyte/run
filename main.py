@@ -225,10 +225,10 @@ async def download(
                     return stream(), content_hash
 
 
-@app.head("/", status_code=status.HTTP_201_CREATED)
+@app.head("/")
 async def healthcheck(redis: Redis = Depends(get_redis)):
     await redis.ping()
-    return
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @app.get("/", response_class=HTMLResponse)
