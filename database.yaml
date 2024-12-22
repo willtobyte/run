@@ -7,10 +7,10 @@ artifacts:
     resolution: 480p
 
   - name: MegaRick
-    runtime: 1.0.26
+    runtime: 1.0.27
     organization: willtobyte
     repository: megarick
-    release: 1.0.27
+    release: 1.0.28
     resolution: 720p
     authors:
       - name: Rodrigo Delduca
