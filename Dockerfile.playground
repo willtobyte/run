@@ -32,6 +32,7 @@ from fastapi import APIRouter
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import FileResponse
+from fastapi.middleware.gzip import GZipMiddleware
 from rx.disposable import CompositeDisposable
 from rx.operators import debounce
 from rx.scheduler.eventloop import AsyncIOScheduler
@@ -42,6 +43,9 @@ from starlette.types import Send
 from watchdog.events import FileSystemEventHandler
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
+
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
 
 def build() -> None:
     print("building...")
@@ -120,20 +124,24 @@ async def debug(request: Request):
 @playground.get("/bundle.7z")
 async def bundle():
     source = "/opt/game"
-    stream = io.BytesIO()
-    with py7zr.SevenZipFile(stream, mode="w") as archive:
-        for root, dirs, files in os.walk(source):
-            if ".git" in dirs:
-                dirs.remove(".git")
-            for file in files:
-                path = os.path.join(root, file)
-                arcname = os.path.relpath(path, source)
-                archive.write(path, arcname)
 
-    stream.seek(0)
+    def generate():
+        with io.BytesIO() as buffer:
+            with py7zr.SevenZipFile(buffer, mode="w") as archive:
+                for root, dirs, files in os.walk(source):
+                    if ".git" in dirs:
+                        dirs.remove(".git")
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, source)
+                        archive.write(file_path, arcname)
 
-    return Response(
-        content=stream.read(),
+            buffer.seek(0)
+            while chunk := buffer.read(8192 * 4):
+                yield chunk
+
+    return StreamingResponse(
+        content=generate(),
         media_type="application/x-7z-compressed",
         headers={"Content-Disposition": "attachment; filename=bundle.7z"},
     )
