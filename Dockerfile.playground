@@ -31,7 +31,6 @@ import py7zr
 from fastapi import APIRouter
 from fastapi import Request
 from fastapi import Response
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.gzip import GZipMiddleware
 from rx.disposable import CompositeDisposable
@@ -107,11 +106,6 @@ async def shutdown_event():
     if hasattr(app.state, "notifiers"):
         for notifier in app.state.notifiers:
             notifier.on_completed()
-
-class SafeFileResponse(FileResponse):
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        self.set_stat_headers = lambda *args, **kwargs: None
-        await super().__call__(scope, receive, send)
 
 
 playground = APIRouter(prefix="/playground")
