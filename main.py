@@ -37,7 +37,7 @@ from tenacity import retry
 from tenacity import stop_after_attempt
 from tenacity import wait_fixed
 
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
@@ -121,8 +121,12 @@ async def websocket(websocket: WebSocket) -> None:
                                 arguments = dict(arguments) if isinstance(arguments, (dict, list)) else {}
                                 func = partial(module.run, **arguments)
                                 result = await to_thread(func)
-                                logger.info(f"Successfully executed {method} with arguments: {arguments} and result: {result}")
                                 response["rpc"]["response"]["result"] = result
+
+                                logger.debug(
+                                    f"Successfully executed {method} with arguments: {arguments} "
+                                    f"and result: {result}"
+                                )
                             except Exception as exc:
                                 logger.error(
                                     f"Error executing {method} with arguments {arguments}: {exc}",
