@@ -1,8 +1,8 @@
 import asyncio
 import base64
 import hashlib
-import os
 import logging
+import os
 import zipfile
 from asyncio import to_thread
 from datetime import datetime
@@ -118,11 +118,15 @@ async def websocket(websocket: WebSocket) -> None:
                             response = {"rpc": {"response": {"id": id}}}
                             try:
                                 module = import_module(f"procedures.{method}")
-                                func = partial(module.run, **(dict(arguments) if isinstance(arguments, (dict, list)) else {}))
+                                func = partial(
+                                    module.run, **(dict(arguments) if isinstance(arguments, (dict, list)) else {})
+                                )
                                 result = await to_thread(func)
                                 response["rpc"]["response"]["result"] = result
                             except Exception as exc:
-                                logger.error(f"Error executing {method} with arguments {arguments}: {exc}", exc_info=True)
+                                logger.error(
+                                    f"Error executing {method} with arguments {arguments}: {exc}", exc_info=True
+                                )
                                 response["rpc"]["response"]["error"] = str(exc)
                             await websocket.send_json(response)
                         case _:
