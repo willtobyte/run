@@ -121,6 +121,7 @@ async def websocket(websocket: WebSocket) -> None:
                                 arguments = dict(arguments) if isinstance(arguments, (dict, list)) else {}
                                 func = partial(module.run, **arguments)
                                 result = await to_thread(func)
+                                logger.info(f"Successfully executed {method} with arguments: {arguments} and result: {result}")
                                 response["rpc"]["response"]["result"] = result
                             except Exception as exc:
                                 logger.error(
@@ -129,6 +130,7 @@ async def websocket(websocket: WebSocket) -> None:
                                 )
 
                                 response["rpc"]["response"]["error"] = str(exc)
+
                             await websocket.send_json(response)
                         case _:
                             pass
