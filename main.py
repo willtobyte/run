@@ -118,9 +118,8 @@ async def websocket(websocket: WebSocket) -> None:
                             response = {"rpc": {"response": {"id": id}}}
                             try:
                                 module = import_module(f"procedures.{method}")
-                                func = partial(
-                                    module.run, **(dict(arguments) if isinstance(arguments, (dict, list)) else {})
-                                )
+                                arguments = dict(arguments) if isinstance(arguments, (dict, list)) else {}
+                                func = partial(module.run, **arguments)
                                 result = await to_thread(func)
                                 response["rpc"]["response"]["result"] = result
                             except Exception as exc:
