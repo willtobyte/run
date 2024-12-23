@@ -1,8 +1,8 @@
 import asyncio
 import base64
 import hashlib
-import json
 import os
+import logging
 import zipfile
 from asyncio import to_thread
 from datetime import datetime
@@ -37,6 +37,9 @@ from tenacity import retry
 from tenacity import stop_after_attempt
 from tenacity import wait_fixed
 
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
@@ -48,8 +51,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+class Context:
+    def __init__(self, clients: set[WebSocket], lock: asyncio.Lock) -> None:
+        self.clients = clients
+        self.lock = lock
+
+
 clients = set()
 lock = asyncio.Lock()
+context = Context(clients, lock)
 
 
 with open("database.yaml", "rt") as f:
@@ -95,24 +106,25 @@ async def websocket(websocket: WebSocket) -> None:
             while True:
                 try:
                     await asyncio.sleep(10)
-                    await websocket.send_text(json.dumps({"command": "ping"}))
+                    await websocket.send_json({"command": "ping"})
                 except (WebSocketDisconnect, asyncio.TimeoutError):
                     break
 
         async def relay() -> None:
             try:
-                async for message in websocket.iter_text():
-                    match json.loads(message):
+                async for message in websocket.iter_json():
+                    match message:
                         case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
                             response = {"rpc": {"response": {"id": id}}}
                             try:
                                 module = import_module(f"procedures.{method}")
-                                func = partial(module.run, **arguments)
+                                func = partial(module.run, **(dict(arguments) if isinstance(arguments, (dict, list)) else {}))
                                 result = await to_thread(func)
                                 response["rpc"]["response"]["result"] = result
                             except Exception as exc:
+                                logger.error(f"Error executing {method} with arguments {arguments}: {exc}", exc_info=True)
                                 response["rpc"]["response"]["error"] = str(exc)
-                            await websocket.send_text(json.dumps(response))
+                            await websocket.send_json(response)
                         case _:
                             pass
             except WebSocketDisconnect:
