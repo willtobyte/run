@@ -37,7 +37,7 @@ from tenacity import retry
 from tenacity import stop_after_attempt
 from tenacity import wait_fixed
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
@@ -81,12 +81,14 @@ broadcast = SimpleNamespace(online=online)
 async def add(websocket: WebSocket) -> None:
     async with lock:
         clients.add(websocket)
+        logger.info(f"Client connected. Total clients: {len(clients)}")
         await broadcast.online(clients)
 
 
 async def disconnect(websocket: WebSocket) -> None:
     async with lock:
         clients.discard(websocket)
+        logger.info(f"Client disconnected. Total clients: {len(clients)}")
         await broadcast.online(clients)
 
 
@@ -123,7 +125,7 @@ async def websocket(websocket: WebSocket) -> None:
                                 result = await to_thread(func)
                                 response["rpc"]["response"]["result"] = result
 
-                                logger.debug(
+                                logger.info(
                                     f"Successfully executed {method} with arguments: {arguments} "
                                     f"and result: {result}"
                                 )
