@@ -125,8 +125,10 @@ async def websocket(websocket: WebSocket) -> None:
                                 response["rpc"]["response"]["result"] = result
                             except Exception as exc:
                                 logger.error(
-                                    f"Error executing {method} with arguments {arguments}: {exc}", exc_info=True
+                                    f"Error executing {method} with arguments {arguments}: {exc}",
+                                    exc_info=True,
                                 )
+
                                 response["rpc"]["response"]["error"] = str(exc)
                             await websocket.send_json(response)
                         case _:
