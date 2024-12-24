@@ -33,8 +33,12 @@ from fastapi import Request
 from fastapi import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.gzip import GZipMiddleware
+from rx import create
+from rx import defer
 from rx.disposable import CompositeDisposable
 from rx.operators import debounce
+from rx import from_callable
+from rx.operators import flat_map
 from rx.scheduler.eventloop import AsyncIOScheduler
 from rx.subject import Subject
 from starlette.types import Receive
@@ -47,8 +51,10 @@ from watchdog.observers import Observer
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
-def build() -> None:
-    print("building...")
+async def reload() -> None:
+    message = {"command": "reload"}
+    tasks = (asyncio.create_task(c.send_json(message)) for c in clients)
+    await asyncio.gather(*tasks)
 
 
 class FilteredEventHandler(PatternMatchingEventHandler):
@@ -77,16 +83,35 @@ def observe(path: str, handler: FileSystemEventHandler) -> Observer:
 
 @app.on_event("startup")
 async def startup_event():
+    def execute(coroutine):
+        def observable(observer, _):
+            async def run():
+                try:
+                    result = await coroutine()
+                    observer.on_next(result)
+                    observer.on_completed()
+                except Exception as ex:
+                    observer.on_error(ex)
+            asyncio.create_task(run())
+
+        return create(observable)
+
     loop = asyncio.get_event_loop()
     scheduler = AsyncIOScheduler(loop=loop)
 
     engine_notifier = Subject()
-    engine_subscription = engine_notifier.pipe(debounce(3.0, scheduler=scheduler)).subscribe(lambda _: build())
+    engine_subscription = engine_notifier.pipe(
+        debounce(3.0, scheduler=scheduler),
+        flat_map(lambda _: execute(reload))
+    ).subscribe()
     engine_handler = FilteredEventHandler(engine_notifier)
     engine_observer = observe("/opt/engine", engine_handler)
 
     game_notifier = Subject()
-    game_subscription = game_notifier.pipe(debounce(3.0, scheduler=scheduler)).subscribe(lambda _: build())
+    game_subscription = game_notifier.pipe(
+        debounce(3.0, scheduler=scheduler),
+        flat_map(lambda _: execute(reload))
+    ).subscribe()
     game_handler = AllFilesEventHandler(game_notifier)
     game_observer = observe("/opt/game", game_handler)
 
