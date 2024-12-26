@@ -26,24 +26,20 @@ RUN <<EOF
 cat <<CODE >> main.py
 import asyncio
 import io
+import os
 
 import py7zr
 from fastapi import APIRouter
 from fastapi import Request
-from fastapi import Response
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from rx import create
-from rx import defer
 from rx.disposable import CompositeDisposable
 from rx.operators import debounce
-from rx import from_callable
 from rx.operators import flat_map
 from rx.scheduler.eventloop import AsyncIOScheduler
 from rx.subject import Subject
-from starlette.types import Receive
-from starlette.types import Scope
-from starlette.types import Send
 from watchdog.events import FileSystemEventHandler
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
@@ -92,6 +88,7 @@ async def startup_event():
                     observer.on_completed()
                 except Exception as ex:
                     observer.on_error(ex)
+
             asyncio.create_task(run())
 
         return create(observable)
@@ -101,16 +98,14 @@ async def startup_event():
 
     engine_notifier = Subject()
     engine_subscription = engine_notifier.pipe(
-        debounce(3.0, scheduler=scheduler),
-        flat_map(lambda _: execute(reload))
+        debounce(3.0, scheduler=scheduler), flat_map(lambda _: execute(reload))
     ).subscribe()
     engine_handler = FilteredEventHandler(engine_notifier)
     engine_observer = observe("/opt/engine", engine_handler)
 
     game_notifier = Subject()
     game_subscription = game_notifier.pipe(
-        debounce(3.0, scheduler=scheduler),
-        flat_map(lambda _: execute(reload))
+        debounce(3.0, scheduler=scheduler), flat_map(lambda _: execute(reload))
     ).subscribe()
     game_handler = AllFilesEventHandler(game_notifier)
     game_observer = observe("/opt/game", game_handler)
