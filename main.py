@@ -121,6 +121,7 @@ async def websocket(websocket: WebSocket) -> None:
                             try:
                                 module = import_module(f"procedures.{method}")
                                 arguments = dict(arguments) if isinstance(arguments, (dict, list)) else {}
+                                # arguments["redis"] = redis
                                 func = partial(module.run, **arguments)
                                 result = await to_thread(func)
                                 response["rpc"]["response"]["result"] = result
