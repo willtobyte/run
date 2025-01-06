@@ -158,7 +158,10 @@ async def bundle():
     return StreamingResponse(
         content=generate(),
         media_type="application/x-7z-compressed",
-        headers={"Content-Disposition": "attachment; filename=bundle.7z"},
+        headers={
+          "Content-Disposition": "attachment; filename=bundle.7z",
+          "Cache-Control": "no-transform",
+        },
     )
 
 
