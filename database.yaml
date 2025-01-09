@@ -16,3 +16,14 @@ artifacts:
       - name: Rodrigo Delduca
         role: Developer & Game Designer
         website: https://rodrigodelduca.com.br
+
+  - name: Slime
+    runtime: 1.0.41
+    organization: willtobyte
+    repository: slime
+    release: 1.0.1
+    resolution: 720p
+    authors:
+      - name: Rodrigo Delduca
+        role: Developer & Game Designer
+        website: https://rodrigodelduca.com.br
