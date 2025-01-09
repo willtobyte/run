@@ -21,7 +21,7 @@ artifacts:
     runtime: 1.0.41
     organization: willtobyte
     repository: slime
-    release: 1.0.1
+    release: 1.0.3
     resolution: 720p
     authors:
       - name: Rodrigo Delduca
