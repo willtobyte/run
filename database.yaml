@@ -1,19 +1,6 @@
 artifacts:
-  - name: Henrique
-    runtime: 1.0.2
-    organization: willtobyte
-    repository: henrique
-    release: 0.0.27
-    resolution: 480p
-
-  - name: MegaRick
-    runtime: 1.0.30
-    organization: willtobyte
-    repository: megarick
-    release: 1.0.30
-    resolution: 720p
-
   - name: Slime
+    cover: cover.png
     runtime: 1.0.41
     organization: willtobyte
     repository: slime
@@ -29,6 +16,22 @@ artifacts:
       One must try to deceive the other and then attack. Whoever attacks first earns the point.
 
       ### Authors
-      Rodrigo Delduca [rodrigodelduca.com.br](https://rodrigodelduca.com.br).
+      * Rodrigo Delduca [rodrigodelduca.com.br](https://rodrigodelduca.com.br).
 
-      ***Press any key to continue.***
+      ***Any key to continue.***
+
+  - name: MegaRick
+    cover: cover.png
+    runtime: 1.0.30
+    organization: willtobyte
+    repository: megarick
+    release: 1.0.30
+    resolution: 720p
+
+  - name: Henrique
+    cover: cover.png
+    runtime: 1.0.2
+    organization: willtobyte
+    repository: henrique
+    release: 0.0.27
+    resolution: 480p
