@@ -22,17 +22,21 @@
 
     .about {
       position: absolute;
-      bottom: 0;
-      width: 100%;
-      padding: 16px;
+      top: 0;
+      left: 0;
+      width: 100%; /* Cobre 100% da largura do canvas */
+      height: 100%; /* Cobre 100% da altura do canvas */
       background-color: rgba(255, 255, 255, 0.8);
       box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-      text-align: center;
+      display: flex;
+      flex-direction: column; /* Garante que os elementos dentro fiquem em uma coluna */
+      justify-content: center; /* Centraliza o conteúdo verticalmente */
+      align-items: center; /* Centraliza o conteúdo horizontalmente */
+      text-align: center; /* Alinha o texto ao centro */
       font-family: Arial, sans-serif;
       font-size: 14px;
       line-height: 1.4;
-      overflow-y: auto;
-      max-height: 30%;
+      overflow-y: auto; /* Permite rolagem se necessário */
     }
 
     .about ul {
