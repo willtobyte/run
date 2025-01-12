@@ -20,6 +20,21 @@
       overflow: hidden;
     }
 
+    .about {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      padding: 16px;
+      background-color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+      overflow-y: auto;
+      max-height: 30%;
+    }
+
     .container {
       position: relative;
       width: {{ width }}px;
@@ -47,6 +62,9 @@
 {% block content %}
   <div class="container">
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div class="about">
+      {{ about|safe }}
+    </div>
   </div>
 
   <script type="module">
@@ -68,5 +86,9 @@
     script.src = 'carimbo.js';
     script.defer = true;
     document.body.appendChild(script);
+
+    window.addEventListener("keydown", () => {
+      document.querySelector(".about").style.display = "none";
+    });
   </script>
 {% endblock %}

@@ -12,10 +12,6 @@ artifacts:
     repository: megarick
     release: 1.0.30
     resolution: 720p
-    authors:
-      - name: Rodrigo Delduca
-        role: Developer & Game Designer
-        website: https://rodrigodelduca.com.br
 
   - name: Slime
     runtime: 1.0.41
@@ -23,7 +19,16 @@ artifacts:
     repository: slime
     release: 1.0.3
     resolution: 720p
-    authors:
-      - name: Rodrigo Delduca
-        role: Developer & Game Designer
-        website: https://rodrigodelduca.com.br
+    about: |
+      ### Slime
+      An apocalyptic hand trying to shape the ideas of a slime.
+
+      ### How to play
+      You will need two controllers to play: the first one controls the slime, and the second controls the hand. Use the directional buttons to move and a button to attack.
+
+      One must try to deceive the other and then attack. Whoever attacks first earns the point.
+
+      ### Authors
+      Rodrigo Delduca [rodrigodelduca.com.br](https://rodrigodelduca.com.br).
+
+      ***Press any key to continue.***

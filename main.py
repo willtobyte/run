@@ -32,6 +32,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
+from markdown import markdown
 from redis.asyncio import Redis
 from tenacity import retry
 from tenacity import stop_after_attempt
@@ -286,6 +287,17 @@ async def play(
     resolution: str,
     request: Request,
 ):
+    about = markdown(
+        next(
+            (
+                a.get("about", "")
+                for a in database["artifacts"]
+                if {runtime, organization, repository, release} <= set(a.values())
+            ),
+            "",
+        )
+    )
+
     mapping = {
         "480p": (854, 480),
         "720p": (1280, 720),
@@ -299,6 +311,7 @@ async def play(
         request=request,
         name="play.html",
         context={
+            "about": about,
             "url": url,
             "width": width,
             "height": height,
