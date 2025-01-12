@@ -21,6 +21,9 @@ artifacts:
 
       ***Any key to continue***
 
+      Made with [Carimbo](https://github.com/willtobyte/carimbo)
+
+
   - name: MegaRick
     cover: cover.png
     runtime: 1.0.30
