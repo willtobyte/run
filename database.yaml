@@ -7,27 +7,34 @@ artifacts:
     release: 1.0.3
     resolution: 720p
     about: |
-      ## Slime
+      # **Slime**
+
       An apocalyptic hand trying to shape the ideas of a slime.
 
-      ### How to play
-      You will need *two controllers* to play: the first one controls the slime, and the second controls the hand. Use the directional buttons to move and a button to attack.
+      ## How to Play
 
-      One must try to deceive the other and then attack. Whoever attacks first earns the point.
+      You’ll need **two controllers**:
+      One controls the slime and the other the hand.
+      Use directional buttons to move and attack).
 
-      ### Authors
-      * Pixel Art by Alyson Monteiro [alysonkof.com.br](https://alysonkof.com.br)
-      * Programming by Rodrigo Delduca [rodrigodelduca.com.br](https://rodrigodelduca.com.br)
+      ### Gameplay Mechanics
+      - Each player tries to **deceive** the other and then **attack**.
+      - The first to **successfully attack** earns a point.
 
-      Made with [Carimbo](https://github.com/willtobyte/carimbo)
+      ## Authors
 
-      ### Platforms
+      - **Pixel Art**: [Alyson Monteiro](https://alysonkof.com.br)
+      - **Programming**: [Rodrigo Delduca](https://rodrigodelduca.com.br)
 
-      Only desktop web browsers.
+      Crafted with **[Carimbo](https://github.com/willtobyte/carimbo)**.
 
-      *Source code* [github.com/willtobyte/slime](https://github.com/willtobyte/slime)
+      ## Platforms
 
-      ***Any key to continue***
+      This game is designed for **desktop web browsers only**.
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/slime).
+
+      ### Press *any key* to continue
 
   - name: MegaRick
     cover: cover.png
