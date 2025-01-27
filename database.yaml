@@ -44,6 +44,29 @@ artifacts:
     repository: megarick
     release: 1.0.30
     resolution: 720p
+    about: |
+      # **MegaRick**
+
+      An evil green octopus trying to stop Henrique from saving his mother.
+
+      ## How to Play
+
+      Use the arrow keys to move and the spacebar to shoot.
+
+      ## Authors
+
+      - **Pixel Art**: [Aline Bulcão](https://www.fiverr.com/yuugenpixie/create-pixel-art-of-your-choice)
+      - **Programming**: [Rodrigo Delduca](https://rodrigodelduca.com.br)
+
+      Crafted with **[Carimbo](https://github.com/willtobyte/carimbo)**.
+
+      ## Platforms
+
+      This game is designed for **desktop web browsers only**.
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/megarick).
+
+      ### Press *any key* to continue
 
   - name: Henrique
     cover: cover.png
