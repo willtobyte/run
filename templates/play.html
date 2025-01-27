@@ -96,7 +96,8 @@
     script.defer = true;
     document.body.appendChild(script);
 
-    window.addEventListener("keydown", () => {
+    window.addEventListener("keydown", (event) => {
+      event.stopPropagation();
       document.querySelector(".about").style.display = "none";
     });
   </script>
