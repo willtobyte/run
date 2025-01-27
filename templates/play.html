@@ -96,10 +96,15 @@
     script.defer = true;
     document.body.appendChild(script);
 
-    window.addEventListener("keydown", (event) => {
+    function handleKeydown(event) {
       event.stopImmediatePropagation();
-      event.stopPropagation();
+      event.preventDefault();
+
       document.querySelector(".about").style.display = "none";
-    }, true);
-  </script>
+
+      window.removeEventListener("keydown", handleKeydown, true);
+    }
+
+    window.addEventListener("keydown", handleKeydown, true);
+    </script>
 {% endblock %}
