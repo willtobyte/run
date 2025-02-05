@@ -28,7 +28,7 @@
     {% for artifact in artifacts %}
       <li>
         <a href="/play/{{ artifact.runtime }}/{{ artifact.organization }}/{{ artifact.repository }}/{{ artifact.release }}/{{ artifact.resolution }}">
-          <img src="https://placehold.co/480x270" alt="Cover for {{ artifact.repository }}">
+          <img src="{{ artifact.cover }}" alt="Cover for {{ artifact.repository }}">
           /play/{{ artifact.repository }}
         </a>
       </li>

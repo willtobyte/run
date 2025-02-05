@@ -1,6 +1,6 @@
 artifacts:
   - name: Slime
-    cover: cover.png
+    cover: https://raw.githubusercontent.com/willtobyte/media/main/slime/cover.png
     runtime: 1.0.42
     organization: willtobyte
     repository: slime
@@ -38,7 +38,7 @@ artifacts:
       ### Press *any key* to continue
 
   - name: MegaRick
-    cover: cover.png
+    cover: https://raw.githubusercontent.com/willtobyte/media/main/megarick/cover.png
     runtime: 1.0.30
     organization: willtobyte
     repository: megarick
