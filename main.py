@@ -351,7 +351,6 @@ async def dynamic(
     now = datetime.utcnow()
     timestamp = mktime(now.timetuple())
     modified = format_date_time(timestamp)
-
     duration = timedelta(days=365).total_seconds()
     headers = {
         "Cache-Control": f"public, max-age={int(duration)}, immutable",
