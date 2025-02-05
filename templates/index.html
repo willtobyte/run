@@ -2,24 +2,24 @@
 
 {% block head %}
   <style>
-  img {
-    width: 100%;
-    height: auto;
-    max-width: 480px;
-    display: block;
-    margin: 0 auto;
-  }
+    img {
+      width: 100%;
+      height: auto;
+      max-width: 480px;
+      display: block;
+      margin: 0 auto;
+    }
 
-  a {
-    display: inline-block;
-    margin-top: 10px;
-    text-decoration: none;
-  }
+    a {
+      display: inline-block;
+      margin-top: 10px;
+      text-decoration: none;
+    }
 
-  li {
-    text-align: center;
-    margin-bottom: 20px;
-  }
+    li {
+      text-align: center;
+      margin-bottom: 20px;
+    }
   </style>
 {% endblock %}
 
@@ -28,7 +28,12 @@
     {% for artifact in artifacts %}
       <li>
         <a href="/play/{{ artifact.runtime }}/{{ artifact.organization }}/{{ artifact.repository }}/{{ artifact.release }}/{{ artifact.resolution }}">
-          <img src="{{ artifact.cover }}" alt="Cover for {{ artifact.repository }}">
+          <img
+            src="{{ artifact.cover }}"
+            alt="Cover for {{ artifact.repository }}"
+            width="480"
+            height="270"
+          >
           /play/{{ artifact.repository }}
         </a>
       </li>

@@ -1,6 +1,6 @@
 artifacts:
   - name: Slime
-    cover: https://raw.githubusercontent.com/willtobyte/media/main/slime/cover.png
+    cover: https://raw.githubusercontent.com/willtobyte/media/main/slime/cover.avif
     runtime: 1.0.42
     organization: willtobyte
     repository: slime
