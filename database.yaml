@@ -69,9 +69,33 @@ artifacts:
       ### Press *any key* to continue
 
   - name: Henrique
-    cover: cover.png
+    cover: 
     runtime: 1.0.2
     organization: willtobyte
     repository: henrique
     release: 0.0.27
     resolution: 480p
+    about: |
+      # **Henrique, the little apple critter, that little red one, you know?**
+
+      A cheeky little apple worm!
+      
+      Code wrote by ChatGPT.
+
+      ## How to Play
+
+      Use the WSDA keys to move.
+
+      ## Authors
+
+      - **Programming**: [ChatGPT 3.5](https://openai.com)
+
+      Crafted with **[Carimbo](https://github.com/willtobyte/carimbo)**.
+
+      ## Platforms
+
+      This game is designed for **desktop web browsers only**.
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/henrique).
+
+      ### Press *any key* to continue
