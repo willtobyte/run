@@ -334,10 +334,10 @@ async def dynamic(
             url = f"https://github.com/{organization}/{repository}/releases/download/v{release}/bundle.7z"
             media_type = "application/x-7z-compressed"
         case "carimbo.js":
-            url = f"https://github.com/pigmentolabs/carimbo/releases/download/v{runtime}/WebAssembly.zip"
+            url = f"https://github.com/willtobyte/carimbo/releases/download/v{runtime}/WebAssembly.zip"
             media_type = "application/javascript"
         case "carimbo.wasm":
-            url = f"https://github.com/pigmentolabs/carimbo/releases/download/v{runtime}/WebAssembly.zip"
+            url = f"https://github.com/willtobyte/carimbo/releases/download/v{runtime}/WebAssembly.zip"
             media_type = "application/wasm"
         case _:
             raise HTTPException(status_code=404)
