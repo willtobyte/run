@@ -5,8 +5,7 @@ import logging
 import os
 import zipfile
 from asyncio import to_thread
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import partial
 from importlib import import_module
 from io import BytesIO
@@ -19,25 +18,14 @@ from wsgiref.handlers import format_date_time
 import docker
 import httpx
 import yaml
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import FastAPI
-from fastapi import HTTPException
-from fastapi import Request
-from fastapi import Response
-from fastapi import WebSocket
-from fastapi import WebSocketDisconnect
-from fastapi import status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from markdown import markdown
 from redis.asyncio import Redis
-from tenacity import retry
-from tenacity import stop_after_attempt
-from tenacity import wait_fixed
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -102,12 +90,11 @@ async def favicon():
 
 
 @app.websocket("/socket")
-async def websocket(websocket: WebSocket) -> None:
+async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
     await add(websocket)
 
     try:
-
         async def heartbeat() -> None:
             while True:
                 try:
@@ -125,21 +112,18 @@ async def websocket(websocket: WebSocket) -> None:
                             try:
                                 module = import_module(f"procedures.{method}")
                                 arguments = dict(arguments) if isinstance(arguments, (dict, list)) else {}
-                                # arguments["redis"] = redis
                                 func = partial(module.run, **arguments)
                                 result = await to_thread(func)
                                 response["rpc"]["response"]["result"] = result
 
                                 logger.info(
-                                    f"Successfully executed {method} with arguments: {arguments} "
-                                    f"and result: {result}"
+                                    f"Successfully executed {method} with arguments: {arguments} and result: {result}"
                                 )
                             except Exception as exc:
                                 logger.error(
                                     f"Error executing {method} with arguments {arguments}: {exc}",
                                     exc_info=True,
                                 )
-
                                 response["rpc"]["response"]["error"] = str(exc)
 
                             await websocket.send_json(response)
@@ -148,13 +132,8 @@ async def websocket(websocket: WebSocket) -> None:
             except WebSocketDisconnect:
                 pass
 
-        _, pending = await asyncio.wait(
-            [
-                asyncio.create_task(heartbeat()),
-                asyncio.create_task(relay()),
-            ],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
+        tasks = [asyncio.create_task(heartbeat()), asyncio.create_task(relay())]
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
     finally:
@@ -187,6 +166,10 @@ async def get_redis() -> Redis:
     return redis
 
 
+async def stream_content(content: bytes) -> AsyncGenerator[bytes, None]:
+    yield content
+
+
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
 async def download(
     redis: Redis,
@@ -202,14 +185,10 @@ async def download(
     async with redis.pipeline(transaction=True) as pipe:
         pipe.get(key((namespace, filename, "content")))
         pipe.get(key((namespace, filename, "hash")))
-        data, hash = await pipe.execute()
+        cached_content, cached_hash = await pipe.execute()
 
-    if isinstance(data, bytes) and isinstance(hash, bytes) and data.strip() and hash.strip():
-
-        async def stream() -> AsyncGenerator[bytes, None]:
-            yield data
-
-        return stream(), hash.decode()
+    if isinstance(cached_content, bytes) and isinstance(cached_hash, bytes) and cached_content.strip() and cached_hash.strip():
+        return stream_content(cached_content), cached_hash.decode()
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
@@ -219,9 +198,9 @@ async def download(
 
         async with redis.pipeline(transaction=True) as pipe:
 
-            def store(pipe, key_parts: tuple[str, ...], content: bytes, hash: str) -> None:
+            def store(pipe, key_parts: tuple[str, ...], content: bytes, hash_value: str) -> None:
                 prefix = key(key_parts)
-                pipe.set(key((prefix, "hash")), hash, ex=ttl)
+                pipe.set(key((prefix, "hash")), hash_value, ex=ttl)
                 pipe.set(key((prefix, "content")), content, ex=ttl)
 
             match ext:
@@ -233,26 +212,15 @@ async def download(
                             content_hash = base64.b64encode(hashlib.sha256(content).digest()).decode()
                             store(pipe, (namespace, name), content, content_hash)
                             if name == filename:
-
-                                async def stream():
-                                    yield content
-
-                                result = (stream(), content_hash)
-
+                                result = (stream_content(content), content_hash)
                         await pipe.execute()
                         return result
-
                 case _:
                     data = response.content
                     content_hash = base64.b64encode(hashlib.sha256(data).digest()).decode()
                     store(pipe, (namespace, filename), data, content_hash)
-
                     await pipe.execute()
-
-                    async def stream():
-                        yield data
-
-                    return stream(), content_hash
+                    return stream_content(data), content_hash
 
 
 @app.head("/")
@@ -264,7 +232,6 @@ async def healthcheck(redis: Redis = Depends(get_redis)):
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     artifacts = database.get("artifacts", [])
-
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -307,9 +274,7 @@ async def play(
         "1080p": (1920, 1080),
     }
     width, height = mapping[resolution]
-
     url = f"/play/{runtime}/{organization}/{repository}/{release}/{resolution}/"
-
     return templates.TemplateResponse(
         request=request,
         name="play.html",
@@ -349,8 +314,7 @@ async def dynamic(
     if result is None:
         raise HTTPException(status_code=404)
 
-    content, hash = result
-
+    content, etag = result
     now = datetime.utcnow()
     timestamp = mktime(now.timetuple())
     modified = format_date_time(timestamp)
@@ -359,7 +323,7 @@ async def dynamic(
         "Cache-Control": f"public, max-age={int(duration)}, immutable",
         "Content-Disposition": f'inline; filename="{filename}"',
         "Last-Modified": modified,
-        "ETag": hash,
+        "ETag": etag,
     }
 
     return StreamingResponse(
