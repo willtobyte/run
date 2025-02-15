@@ -5,10 +5,12 @@ import logging
 import os
 import zipfile
 from asyncio import to_thread
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from functools import partial
 from importlib import import_module
 from io import BytesIO
+from operator import itemgetter
 from time import mktime
 from types import SimpleNamespace
 from typing import AsyncGenerator
@@ -18,14 +20,25 @@ from wsgiref.handlers import format_date_time
 import docker
 import httpx
 import yaml
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi import Request
+from fastapi import Response
+from fastapi import WebSocket
+from fastapi import WebSocketDisconnect
+from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from markdown import markdown
 from redis.asyncio import Redis
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import retry
+from tenacity import stop_after_attempt
+from tenacity import wait_fixed
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -95,6 +108,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     await add(websocket)
 
     try:
+
         async def heartbeat() -> None:
             while True:
                 try:
@@ -187,7 +201,12 @@ async def download(
         pipe.get(key((namespace, filename, "hash")))
         cached_content, cached_hash = await pipe.execute()
 
-    if isinstance(cached_content, bytes) and isinstance(cached_hash, bytes) and cached_content.strip() and cached_hash.strip():
+    if (
+        isinstance(cached_content, bytes)
+        and isinstance(cached_hash, bytes)
+        and cached_content.strip()
+        and cached_hash.strip()
+    ):
         return stream_content(cached_content), cached_hash.decode()
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
@@ -257,12 +276,13 @@ async def play(
     resolution: str,
     request: Request,
 ):
+    expected = (runtime, organization, repository, release)
     about = markdown(
         next(
             (
-                a.get("about", "")
+                a.get("about", "404")
                 for a in database["artifacts"]
-                if {runtime, organization, repository, release} <= set(a.values())
+                if itemgetter("runtime", "organization", "repository", "release")(a) == expected
             ),
             "",
         )
