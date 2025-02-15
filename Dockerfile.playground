@@ -165,8 +165,15 @@ async def bundle():
     )
 
 
+class NoCacheStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return response
+
+
 app.include_router(playground)
-app.mount("/playground", StaticFiles(directory="/opt/engine"), name="assets")
+app.mount("/playground", NoCacheStaticFiles(directory="/opt/engine"), name="assets")
 CODE
 EOF
 

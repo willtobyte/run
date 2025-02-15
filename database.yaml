@@ -1,10 +1,10 @@
 artifacts:
   - name: Slime
     cover: /media/slime/cover.avif
-    runtime: 1.0.42
+    runtime: 1.0.43
     organization: willtobyte
     repository: slime
-    release: 1.0.4
+    release: 1.0.5
     resolution: 720p
     about: |
       # **Slime**
