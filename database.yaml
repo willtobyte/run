@@ -1,10 +1,10 @@
 artifacts:
   - name: Slime
     cover: /media/slime/cover.avif
-    runtime: 1.0.43
+    runtime: "1.0.43"
     organization: willtobyte
     repository: slime
-    release: 1.0.5
+    release: "1.0.5"
     resolution: 720p
     about: |
       # **Slime**
@@ -39,10 +39,10 @@ artifacts:
 
   - name: MegaRick
     cover: /media/megarick/cover.png
-    runtime: 1.0.30
+    runtime: "1.0.30"
     organization: willtobyte
     repository: megarick
-    release: 1.0.30
+    release: "1.0.30"
     resolution: 720p
     about: |
       # **MegaRick**
@@ -70,10 +70,10 @@ artifacts:
 
   - name: Henrique
     cover: /media/generic/480x270.svg
-    runtime: 1.0.2
+    runtime: "1.0.2"
     organization: willtobyte
     repository: henrique
-    release: 0.0.27
+    release: "0.0.27"
     resolution: 480p
     about: |
       # **Henrique, the little apple critter, that little red one, you know?**
