@@ -276,15 +276,11 @@ async def play(
     resolution: str,
     request: Request,
 ):
-    expected = (runtime, organization, repository, release)
     about = markdown(
         next(
-            (
-                a.get("about", "404")
-                for a in database["artifacts"]
-                if itemgetter("runtime", "organization", "repository", "release")(a) == expected
-            ),
-            "",
+            (a.get("about", "") for a in database.get("artifacts", [])
+              if a.get("organization") == organization and a.get("repository") == repository),
+            ""
         )
     )
 
