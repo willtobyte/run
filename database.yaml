@@ -4,7 +4,7 @@ artifacts:
     runtime: "1.0.43"
     organization: willtobyte
     repository: MOS6502
-    release: "1.0.2"
+    release: "1.0.3"
     resolution: 480p
     about: |
       MOS6502 in pure lua
