@@ -1,4 +1,14 @@
 artifacts:
+  - name: MOS6502
+    cover: /media/generic/480x270.svg
+    runtime: "1.0.43"
+    organization: willtobyte
+    repository: MOS6502
+    release: "1.0.2"
+    resolution: 480p
+    about: |
+      MOS6502 in pure lua
+
   - name: Slime
     cover: /media/slime/cover.avif
     runtime: "1.0.43"

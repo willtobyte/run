@@ -278,7 +278,7 @@ async def play(
 ):
     about = markdown(
         next(
-            (a.get("about", "") for a in database.get("artifacts", [])
+            (a.get("about", "404") for a in database.get("artifacts", [])
               if a.get("organization") == organization and a.get("repository") == repository),
             ""
         )
