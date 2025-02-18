@@ -1,110 +1,121 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block head %}
+<base href="{{ url }}" />
+<link
+  rel="preload"
+  href="carimbo.wasm"
+  as="fetch"
+  type="application/wasm"
+  crossorigin="anonymous"
+/>
+<link
+  rel="preload"
+  href="bundle.7z"
+  as="fetch"
+  type="application/x-7z-compressed"
+  crossorigin="anonymous"
+/>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-{% block head %}
-  <base href="{{ url }}" />
-  <link rel="preload" href="carimbo.wasm" as="fetch" type="application/wasm" crossorigin="anonymous" />
-  <link rel="preload" href="bundle.7z" as="fetch" type="application/x-7z-compressed" crossorigin="anonymous" />
-  <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    line-height: 1.5;
+    overflow: hidden;
+  }
 
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      line-height: 1.5;
-      overflow: hidden;
-    }
+  .about {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    overflow-y: auto;
+  }
 
-    .about {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.8);
-      box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.4;
-      overflow-y: auto;
-    }
+  .about ul {
+    list-style-position: inside;
+    padding-left: 0;
+  }
 
-    .about ul {
-      list-style-position: inside;
-      padding-left: 0;
-    }
+  .container {
+    position: relative;
+    width: {{ width }}px;
+    height: {{ height }}px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-    .container {
-      position: relative;
-      width: {{ width }}px;
-      height: {{ height }}px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+  #canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0;
+    animation: fade 1s ease forwards;
+  }
 
-    #canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      opacity: 0;
-      animation: fade 1s ease forwards;
-    }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container">
+  <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+  {% if about %}
+  <div class="about">{{ about|safe }}</div>
+  {% endif %}
+</div>
 
-    @keyframes fade {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-  </style>
-{% endblock %}
+<script type="module">
+  const canvas = document.getElementById("canvas");
 
-{% block content %}
-  <div class="container">
-    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
-    <div class="about">
-      {{ about|safe }}
-    </div>
-  </div>
+  const response = await fetch("bundle.7z");
+  const bundle = await response.arrayBuffer();
 
-  <script type="module">
-    const canvas = document.getElementById("canvas");
+  window.Module = {
+    canvas,
+    noInitialRun: true,
+    onRuntimeInitialized: () => {
+      FS.writeFile("/bundle.7z", new Uint8Array(bundle));
+      Module.callMain();
+    },
+  };
 
-    const response = await fetch("bundle.7z");
-    const bundle = await response.arrayBuffer();
+  const script = document.createElement("script");
+  script.src = "carimbo.js";
+  script.defer = true;
+  document.body.appendChild(script);
 
-    window.Module = {
-      canvas,
-      noInitialRun: true,
-      onRuntimeInitialized: () => {
-        FS.writeFile("/bundle.7z", new Uint8Array(bundle));
-        Module.callMain();
-      },
-    };
-
-    const script = document.createElement('script');
-    script.src = 'carimbo.js';
-    script.defer = true;
-    document.body.appendChild(script);
-
+  const aboutElem = document.querySelector(".about");
+  if (aboutElem) {
     function handleKeydown(event) {
       event.stopImmediatePropagation();
       event.preventDefault();
 
-      document.querySelector(".about").style.display = "none";
+      aboutElem.style.display = "none";
 
       window.removeEventListener("keydown", handleKeydown, true);
     }
 
     window.addEventListener("keydown", handleKeydown, true);
-    </script>
+  }
+</script>
 {% endblock %}

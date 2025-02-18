@@ -1,15 +1,11 @@
 artifacts:
   - name: MOS6502
-    cover: /media/generic/480x270.svg
+    cover: /media/MOS6502/cover.webp
     runtime: "1.0.43"
     organization: willtobyte
     repository: MOS6502
-    release: "1.0.4"
+    release: "1.0.5"
     resolution: 480p
-    about: |
-      MOS6502 in pure Lua.
-
-      Check out the **source code** on [GitHub](https://github.com/willtobyte/MOS6502).
 
   - name: Slime
     cover: /media/slime/cover.avif
