@@ -1,6 +1,6 @@
 artifacts:
   - name: MOS6502
-    cover: /media/MOS6502/cover.avif
+    cover: /media/MOS6502/cover.png
     runtime: "1.0.43"
     organization: willtobyte
     repository: MOS6502
