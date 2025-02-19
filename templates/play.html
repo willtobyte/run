@@ -22,7 +22,6 @@
   }
   body {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     height: 100vh;
@@ -30,7 +29,6 @@
     overflow-y: auto;
   }
   .container {
-    position: relative;
     width: {{ width }}px;
     height: {{ height }}px;
     display: flex;
@@ -49,7 +47,7 @@
     to { opacity: 1; }
   }
   .about {
-    margin: 20px;
+    margin: 24px;
     font-family: Arial, sans-serif;
     font-size: 14px;
     line-height: 1.4;
@@ -63,7 +61,7 @@
 </style>
 {% endblock %} {% block content %}
 <div class="container">
-  <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+  <canvas id="canvas"></canvas>
 </div>
 {% if about %}
 <div class="about">{{ about|safe }}</div>
@@ -72,6 +70,7 @@
   const canvas = document.getElementById("canvas");
   const response = await fetch("bundle.7z");
   const bundle = await response.arrayBuffer();
+
   window.Module = {
     canvas,
     noInitialRun: true,
@@ -80,6 +79,7 @@
       Module.callMain();
     },
   };
+
   const script = document.createElement("script");
   script.src = "carimbo.js";
   script.defer = true;
