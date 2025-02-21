@@ -16,7 +16,7 @@ artifacts:
     runtime: "1.0.45"
     organization: willtobyte
     repository: slime
-    release: "1.0.7"
+    release: "1.0.8"
     resolution: 720p
     about: |
       # **Slime**
