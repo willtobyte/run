@@ -31,6 +31,7 @@
     height: 100vh;
     line-height: 1.5;
     overflow-y: auto;
+    font-family: "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;
   }
 
   .container {
@@ -39,6 +40,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    aspect-ratio: 16 / 9;
   }
 
   #canvas {
@@ -56,16 +58,53 @@
 
   .about {
     margin: 24px;
-    font-family: Arial, sans-serif;
     font-size: 14px;
     line-height: 1.4;
     text-align: center;
+    font-family: inherit;
   }
 
   .about ul {
     list-style: none;
     padding: 0;
     margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      flex-direction: column;
+      padding: 16px;
+      justify-content: flex-start;
+    }
+
+    .container {
+      margin: 16px auto;
+      position: relative;
+      width: 100%;
+      max-width: 1080px;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+    }
+
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .container {
+      max-width: 480px;
+    }
+  }
+
+  @media (min-width: 481px) and (max-width: 720px) {
+    .container {
+      max-width: 720px;
+    }
   }
 </style>
 {% endblock %} {% block content %}
