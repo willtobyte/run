@@ -225,7 +225,13 @@ async def download(
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
         logger.info(f"Request to {url} returned status code {response.status_code}")
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                raise HTTPException(status_code=404, detail="Resource not found")
+            else:
+                raise
 
     parsed_path = urlparse(url).path
     ext = os.path.splitext(parsed_path)[-1].lower()
