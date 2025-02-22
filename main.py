@@ -8,6 +8,7 @@ from asyncio import to_thread
 from datetime import datetime
 from datetime import timedelta
 from functools import partial
+from functools import wraps
 from importlib import import_module
 from io import BytesIO
 from time import mktime
@@ -246,32 +247,37 @@ async def download(
     return stream_content(data), content_hash
 
 
+def nocache(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        response = await func(*args, **kwargs)
+        response.headers.update(
+            {
+                "Cache-Control": "no-cache, no-store, must-revalidate, proxy-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            }
+        )
+        return response
+
+    return wrapper
+
+
 @app.head("/")
-async def healthcheck(
-    redis: Redis = Depends(get_redis),
-):
+async def healthcheck(redis: Redis = Depends(get_redis)):
     await redis.ping()
     return Response(status_code=status.HTTP_200_OK)
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(
-    request: Request,
-):
+@nocache
+async def index(request: Request, response_class=HTMLResponse):
     artifacts = database.get("artifacts", [])
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={"artifacts": artifacts},
     )
-
-
-@app.get("/flush")
-async def flush(
-    redis: Redis = Depends(get_redis),
-):
-    await redis.flushall()
-    return Response(status_code=status.HTTP_200_OK)
 
 
 router = APIRouter()
