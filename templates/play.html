@@ -1,5 +1,7 @@
 {% extends "base.html" %} {% block head %}
-<base href="{{ url }}" />
+<base
+  href="/assets/{{ runtime }}/{{ organization }}/{{ repository }}/{{ release }}/"
+/>
 
 <link
   rel="preload"
@@ -123,7 +125,7 @@
     canvas,
     noInitialRun: true,
     onRuntimeInitialized: () => {
-      FS.writeFile("/bundle.7z", new Uint8Array(bundle));
+      FS.writeFile("bundle.7z", new Uint8Array(bundle));
       Module.callMain();
     },
   };

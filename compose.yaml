@@ -15,8 +15,8 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1s
-      timeout: 3s
-      retries: 9
+      timeout: 1s
+      retries: 3
     restart: unless-stopped
     volumes:
       - storage:/data

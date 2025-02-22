@@ -283,47 +283,34 @@ router = APIRouter()
 
 
 @router.get("/play/{slug}", response_class=HTMLResponse)
-async def play(
-    slug: str,
-    request: Request,
-):
+async def play(slug: str, request: Request):
     try:
-        artifact = next(a for a in database.get("artifacts", []) if a.get("slug") == slug)
+        artifact = next(a for a in database["artifacts"] if a["slug"] == slug)
     except StopIteration:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
+    about = markdown(artifact["about"])
     mapping = {"480p": (854, 480), "720p": (1280, 720), "1080p": (1920, 1080)}
     width, height = mapping[artifact["resolution"]]
 
-    url = f"/play/{slug}/"
-    return templates.TemplateResponse(
-        request=request,
-        name="play.html",
-        context={
-            "about": markdown(artifact.get("about", "")),
-            "url": url,
-            "width": width,
-            "height": height,
-        },
-    )
+    context = artifact | {
+        "about": about,
+        "url": f"/play/{slug}/",
+        "width": width,
+        "height": height,
+    }
+    return templates.TemplateResponse(request=request, name="play.html", context=context)
 
 
-@router.get("/play/{slug}/{filename}")
+@router.get("/assets/{runtime}/{organization}/{repository}/{release}/{filename}")
 async def dynamic(
-    slug: str,
+    runtime: str,
+    organization: str,
+    repository: str,
+    release: str,
     filename: str,
     redis: Redis = Depends(get_redis),
 ):
-    try:
-        artifact = next(a for a in database.get("artifacts", []) if a.get("slug") == slug)
-    except StopIteration:
-        raise HTTPException(status_code=404, detail="Artifact not found")
-
-    runtime = artifact["runtime"]
-    organization = artifact["organization"]
-    repository = artifact["repository"]
-    release = artifact["release"]
-
     match filename:
         case "bundle.7z":
             url = f"https://github.com/{organization}/{repository}/releases/download/v{release}/bundle.7z"
