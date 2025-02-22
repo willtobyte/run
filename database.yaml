@@ -7,9 +7,11 @@ artifacts:
     release: "1.0.6"
     resolution: 480p
     about: |
-      **MOS6502 in pure Lua**
+      **[MOS6502](https://en.wikipedia.org/wiki/MOS_Technology_6502) in pure [Lua](https://www.lua.org/)**
 
       Check out the **source code** on [GitHub](https://github.com/willtobyte/MOS6502).
+
+      My plan is to build an emulator for the [Nintendo Entertainment System](https://en.wikipedia.org/wiki/Nintendo_Entertainment_System).
 
   - name: Slime
     cover: /media/slime/cover.avif
@@ -47,7 +49,7 @@ artifacts:
 
       Check out the **source code** on [GitHub](https://github.com/willtobyte/slime).
 
-      ### Press *any key* to continue
+      **Enjoy!**
 
   - name: MegaRick
     cover: /media/megarick/cover.png
@@ -82,7 +84,7 @@ artifacts:
 
       Check out the **source code** on [GitHub](https://github.com/willtobyte/megarick).
 
-      ### Press *any key* to continue
+      **Enjoy!**
 
   - name: Henrique
     cover: /media/generic/480x270.svg
@@ -114,4 +116,4 @@ artifacts:
 
       Check out the **source code** on [GitHub](https://github.com/willtobyte/henrique).
 
-      ### Press *any key* to continue
+      **Enjoy!**
