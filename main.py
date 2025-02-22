@@ -213,38 +213,37 @@ async def download(
     parsed_path = urlparse(url).path
     ext = os.path.splitext(parsed_path)[-1].lower()
 
-    async with redis.pipeline(transaction=True) as pipe:
-        if ext == ".zip":
+    if ext == ".zip":
 
-            def decompress() -> (
-                tuple[tuple[AsyncGenerator[bytes, None], str] | None, list[tuple[str, Union[bytes, str]]]]
-            ):
-                commands: list[tuple[str, Union[bytes, str]]] = []
-                result: tuple[AsyncGenerator[bytes, None], str] | None = None
-                with zipfile.ZipFile(BytesIO(response.content)) as zf:
-                    for name in zf.namelist():
-                        file_content = zf.read(name)
-                        file_hash = base64.b64encode(hashlib.sha256(file_content).digest()).decode()
-                        content_key = f"{namespace}:{name}:content"
-                        hash_key = f"{namespace}:{name}:hash"
-                        commands.append((hash_key, file_hash))
-                        commands.append((content_key, file_content))
-                        if name == filename:
-                            result = (stream_content(file_content), file_hash)
-                return result, commands
+        def decompress() -> tuple[tuple[AsyncGenerator[bytes, None], str] | None, list[tuple[str, Union[bytes, str]]]]:
+            commands: list[tuple[str, Union[bytes, str]]] = []
+            result: tuple[AsyncGenerator[bytes, None], str] | None = None
+            with zipfile.ZipFile(BytesIO(response.content)) as zf:
+                for name in zf.namelist():
+                    file_content = zf.read(name)
+                    file_hash = base64.b64encode(hashlib.sha256(file_content).digest()).decode()
+                    content_key = f"{namespace}:{name}:content"
+                    hash_key = f"{namespace}:{name}:hash"
+                    commands.append((hash_key, file_hash))
+                    commands.append((content_key, file_content))
+                    if name == filename:
+                        result = (stream_content(file_content), file_hash)
+            return result, commands
 
-            result, commands = await asyncio.to_thread(decompress)
+        result, commands = await asyncio.to_thread(decompress)
+        async with redis.pipeline(transaction=True) as pipe:
             for key, value in commands:
                 pipe.set(key, value, ex=ttl)
             await pipe.execute()
-            return result
-        else:
-            data = response.content
-            content_hash = base64.b64encode(hashlib.sha256(data).digest()).decode()
-            pipe.set(hash_key, content_hash, ex=ttl)
-            pipe.set(content_key, data, ex=ttl)
-            await pipe.execute()
-            return stream_content(data), content_hash
+        return result
+
+    data = response.content
+    content_hash = base64.b64encode(hashlib.sha256(data).digest()).decode()
+    async with redis.pipeline(transaction=True) as pipe:
+        pipe.set(hash_key, content_hash, ex=ttl)
+        pipe.set(content_key, data, ex=ttl)
+        await pipe.execute()
+    return stream_content(data), content_hash
 
 
 @app.head("/")
