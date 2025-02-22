@@ -268,8 +268,9 @@ router = APIRouter()
 
 @router.get("/play/{slug}", response_class=HTMLResponse)
 async def play(slug: str, request: Request):
-    artifact = next((a for a in database.get("artifacts", []) if a.get("slug") == slug), None)
-    if not artifact:
+    try:
+        artifact = next(a for a in database.get("artifacts", []) if a.get("slug") == slug)
+    except StopIteration:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
     mapping = {"480p": (854, 480), "720p": (1280, 720), "1080p": (1920, 1080)}
@@ -294,8 +295,9 @@ async def dynamic(
     filename: str,
     redis: Redis = Depends(get_redis),
 ):
-    artifact = next((a for a in database.get("artifacts", []) if a.get("slug") == slug), None)
-    if not artifact:
+    try:
+        artifact = next(a for a in database.get("artifacts", []) if a.get("slug") == slug)
+    except StopIteration:
         raise HTTPException(status_code=404, detail="Artifact not found")
 
     runtime = artifact["runtime"]
