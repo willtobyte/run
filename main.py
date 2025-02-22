@@ -263,10 +263,10 @@ async def flush(redis: Redis = Depends(get_redis)):
     return Response(status_code=status.HTTP_200_OK)
 
 
-router = APIRouter(prefix="/play/{slug}")
+router = APIRouter()
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/play/{slug}", response_class=HTMLResponse)
 async def play(slug: str, request: Request):
     artifact = next((a for a in database.get("artifacts", []) if a.get("slug") == slug), None)
     if not artifact:
@@ -288,43 +288,7 @@ async def play(slug: str, request: Request):
     )
 
 
-# @router.get("/", response_class=HTMLResponse)
-# async def play(
-#     runtime: str,
-#     organization: str,
-#     repository: str,
-#     release: str,
-#     resolution: str,
-#     request: Request,
-# ):
-#     about = markdown(
-#         next(
-#             (a.get("about", "404") for a in database.get("artifacts", [])
-#               if a.get("organization") == organization and a.get("repository") == repository),
-#             ""
-#         )
-#     )
-
-#     mapping = {
-#         "480p": (854, 480),
-#         "720p": (1280, 720),
-#         "1080p": (1920, 1080),
-#     }
-#     width, height = mapping[resolution]
-#     url = f"/play/{runtime}/{organization}/{repository}/{release}/{resolution}/"
-#     return templates.TemplateResponse(
-#         request=request,
-#         name="play.html",
-#         context={
-#             "about": about,
-#             "url": url,
-#             "width": width,
-#             "height": height,
-#         },
-#     )
-
-
-@router.get("/{filename}")
+@router.get("/play/{slug}/{filename}")
 async def dynamic(
     slug: str,
     filename: str,
