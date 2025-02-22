@@ -64,6 +64,22 @@ class Context:
         self.lock = lock
 
 
+def nocache(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        response = await func(*args, **kwargs)
+        response.headers.update(
+            {
+                "Cache-Control": "no-cache, no-store, must-revalidate, proxy-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            }
+        )
+        return response
+
+    return wrapper
+
+
 clients = set()
 lock = asyncio.Lock()
 context = Context(clients, lock)
@@ -247,22 +263,6 @@ async def download(
     return stream_content(data), content_hash
 
 
-def nocache(func):
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        response = await func(*args, **kwargs)
-        response.headers.update(
-            {
-                "Cache-Control": "no-cache, no-store, must-revalidate, proxy-revalidate",
-                "Pragma": "no-cache",
-                "Expires": "0",
-            }
-        )
-        return response
-
-    return wrapper
-
-
 @app.head("/")
 async def healthcheck(redis: Redis = Depends(get_redis)):
     await redis.ping()
@@ -270,7 +270,6 @@ async def healthcheck(redis: Redis = Depends(get_redis)):
 
 
 @app.get("/", response_class=HTMLResponse)
-@nocache
 async def index(request: Request, response_class=HTMLResponse):
     artifacts = database.get("artifacts", [])
     return templates.TemplateResponse(
