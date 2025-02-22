@@ -13,6 +13,7 @@ from io import BytesIO
 from time import mktime
 from types import SimpleNamespace
 from typing import AsyncGenerator
+from typing import Union
 from urllib.parse import urlparse
 from wsgiref.handlers import format_date_time
 
@@ -191,64 +192,73 @@ async def download(
     ttl: timedelta = timedelta(days=365),
 ) -> tuple[AsyncGenerator[bytes, None], str] | None:
     namespace = url.split("://", 1)[-1]
+    content_key = f"{namespace}:{filename}:content"
+    hash_key = f"{namespace}:{filename}:hash"
 
-    def key(parts: tuple[str, ...]) -> str:
-        return ":".join(parts)
-
-    async with redis.pipeline(transaction=True) as pipe:
-        pipe.get(key((namespace, filename, "content")))
-        pipe.get(key((namespace, filename, "hash")))
-        cached_content, cached_hash = await pipe.execute()
-
+    cached_content, cached_hash = await redis.mget([content_key, hash_key])
     if (
         isinstance(cached_content, bytes)
         and isinstance(cached_hash, bytes)
         and cached_content.strip()
         and cached_hash.strip()
     ):
+        logger.info(f"Cache hit for resource {url} with hash {cached_hash.decode()}")
         return stream_content(cached_content), cached_hash.decode()
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
+        logger.info(f"Request to {url} returned status code {response.status_code}")
         response.raise_for_status()
 
-        ext = os.path.splitext(urlparse(url).path)[-1].lower()
+    parsed_path = urlparse(url).path
+    ext = os.path.splitext(parsed_path)[-1].lower()
 
-        async with redis.pipeline(transaction=True) as pipe:
+    async with redis.pipeline(transaction=True) as pipe:
+        if ext == ".zip":
 
-            def store(pipe, key_parts: tuple[str, ...], content: bytes, hash_value: str) -> None:
-                prefix = key(key_parts)
-                pipe.set(key((prefix, "hash")), hash_value, ex=ttl)
-                pipe.set(key((prefix, "content")), content, ex=ttl)
+            def decompress() -> (
+                tuple[tuple[AsyncGenerator[bytes, None], str] | None, list[tuple[str, Union[bytes, str]]]]
+            ):
+                commands: list[tuple[str, Union[bytes, str]]] = []
+                result: tuple[AsyncGenerator[bytes, None], str] | None = None
+                with zipfile.ZipFile(BytesIO(response.content)) as zf:
+                    for name in zf.namelist():
+                        file_content = zf.read(name)
+                        file_hash = base64.b64encode(hashlib.sha256(file_content).digest()).decode()
+                        content_key = f"{namespace}:{name}:content"
+                        hash_key = f"{namespace}:{name}:hash"
+                        commands.append((hash_key, file_hash))
+                        commands.append((content_key, file_content))
+                        if name == filename:
+                            result = (stream_content(file_content), file_hash)
+                return result, commands
 
-            match ext:
-                case ".zip":
-                    with zipfile.ZipFile(BytesIO(response.content)) as zf:
-                        result = None
-                        for name in zf.namelist():
-                            content = zf.read(name)
-                            content_hash = base64.b64encode(hashlib.sha256(content).digest()).decode()
-                            store(pipe, (namespace, name), content, content_hash)
-                            if name == filename:
-                                result = (stream_content(content), content_hash)
-                        await pipe.execute()
-                        return result
-                case _:
-                    data = response.content
-                    content_hash = base64.b64encode(hashlib.sha256(data).digest()).decode()
-                    store(pipe, (namespace, filename), data, content_hash)
-                    await pipe.execute()
-                    return stream_content(data), content_hash
+            result, commands = await asyncio.to_thread(decompress)
+            for key, value in commands:
+                pipe.set(key, value, ex=ttl)
+            await pipe.execute()
+            return result
+        else:
+            data = response.content
+            content_hash = base64.b64encode(hashlib.sha256(data).digest()).decode()
+            pipe.set(hash_key, content_hash, ex=ttl)
+            pipe.set(content_key, data, ex=ttl)
+            await pipe.execute()
+            return stream_content(data), content_hash
 
 
 @app.head("/")
-async def healthcheck(redis: Redis = Depends(get_redis)):
+async def healthcheck(
+    redis: Redis = Depends(get_redis),
+):
     await redis.ping()
     return Response(status_code=status.HTTP_200_OK)
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
+async def index(
+    request: Request,
+):
     artifacts = database.get("artifacts", [])
     return templates.TemplateResponse(
         request=request,
@@ -258,7 +268,9 @@ async def index(request: Request):
 
 
 @app.get("/flush")
-async def flush(redis: Redis = Depends(get_redis)):
+async def flush(
+    redis: Redis = Depends(get_redis),
+):
     await redis.flushall()
     return Response(status_code=status.HTTP_200_OK)
 
@@ -267,7 +279,10 @@ router = APIRouter()
 
 
 @router.get("/play/{slug}", response_class=HTMLResponse)
-async def play(slug: str, request: Request):
+async def play(
+    slug: str,
+    request: Request,
+):
     try:
         artifact = next(a for a in database.get("artifacts", []) if a.get("slug") == slug)
     except StopIteration:
