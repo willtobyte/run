@@ -43,7 +43,7 @@
   <ul style="list-style: none; padding: 0;">
     {% for artifact in artifacts %}
       <li>
-        <a href="/play/{{ artifact.runtime }}/{{ artifact.organization }}/{{ artifact.repository }}/{{ artifact.release }}/{{ artifact.resolution }}">
+        <a href="/play/{{ artifact.slug }}">
           <img
             src="{{ artifact.cover }}"
             alt="Cover for {{ artifact.repository }}"

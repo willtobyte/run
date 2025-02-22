@@ -1,5 +1,6 @@
 artifacts:
   - name: MOS6502
+    slug: MOS6502
     cover: /media/MOS6502/cover.png
     runtime: "1.0.43"
     organization: willtobyte
@@ -14,6 +15,7 @@ artifacts:
       My plan is to build an emulator for the [Nintendo Entertainment System](https://en.wikipedia.org/wiki/Nintendo_Entertainment_System).
 
   - name: Slime
+    slug: slime
     cover: /media/slime/cover.avif
     runtime: "1.0.45"
     organization: willtobyte
@@ -52,6 +54,7 @@ artifacts:
       **Enjoy!**
 
   - name: MegaRick
+    slug: megarick
     cover: /media/megarick/cover.png
     runtime: "1.0.30"
     organization: willtobyte
@@ -87,6 +90,7 @@ artifacts:
       **Enjoy!**
 
   - name: Henrique
+    slug: henrique
     cover: /media/generic/480x270.svg
     runtime: "1.0.2"
     organization: willtobyte
