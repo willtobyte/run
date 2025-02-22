@@ -39,6 +39,12 @@ jobs:
           echo "Listing all Docker containers:"
           docker ps -a
 
+      - name: Flush Redis data
+        env:
+          DOCKER_HOST: ssh://root@${{ secrets.HETZNER_IP }}
+        run: |
+          docker compose exec -T redis redis-cli flushall
+
       - name: Purge Cloudflare Cache
         env:
           CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
