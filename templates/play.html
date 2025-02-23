@@ -125,13 +125,13 @@
 {% endblock %} {% block content %}
 <div class="container">
   <canvas id="canvas"></canvas>
+  <div id="loading" style="display: none">
+    This is taking a little longer than expected
+  </div>
 </div>
 {% if about %}
 <div class="about">{{ about|safe }}</div>
 {% endif %}
-<div id="loading" style="display: none">
-  This is taking a little longer than expected
-</div>
 <script type="module">
   const canvas = document.getElementById("canvas");
   const response = await fetch("bundle.7z");
