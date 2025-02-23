@@ -110,6 +110,8 @@ artifacts:
 
       ## Authors
 
+      First demo made with the engine (around 2023). At that time, the engine was very rudimentary and only drew sprites and handled input.
+
       - **Programming**: [ChatGPT 3.5](https://openai.com)
 
       Crafted with **[Carimbo](https://github.com/willtobyte/carimbo)**.
