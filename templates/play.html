@@ -69,6 +69,15 @@
       padding: 16px;
     }
   }
+
+  @media only screen and (min-width: 1024px) {
+    .about {
+      width: {{ width }}px;
+      margin: 8px 0 16px calc((100vw - {{ width }}px) / 2);
+      text-align: left;
+      align-self: flex-start;
+    }
+  }
 </style>
 {% endblock %} {% block content %}
 <div class="page-wrapper">
