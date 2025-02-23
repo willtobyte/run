@@ -160,6 +160,10 @@
       Module.callMain();
     },
   };
+
+  const script = document.createElement("script");
+  script.src = "carimbo.js";
+  script.defer = true;
+  document.body.appendChild(script);
 </script>
-<script src="carimbo.js" defer></script>
 {% endblock %}
