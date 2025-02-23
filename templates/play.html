@@ -43,6 +43,7 @@
     align-items: center;
     justify-content: center;
     aspect-ratio: 16 / 9;
+    position: relative;
   }
 
   #canvas {
@@ -51,6 +52,18 @@
     display: block;
     opacity: 0;
     animation: fade 1s ease forwards;
+  }
+
+  #loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: inherit;
+    text-align: center;
+    background: rgba(255,255,255,0.8);
+    padding: 8px 12px;
+    border-radius: 4px;
   }
 
   @keyframes fade {
@@ -116,15 +129,25 @@
 {% if about %}
 <div class="about">{{ about|safe }}</div>
 {% endif %}
+<div id="loading" style="display: none">
+  This is taking a little longer than expected
+</div>
 <script type="module">
   const canvas = document.getElementById("canvas");
   const response = await fetch("bundle.7z");
   const bundle = await response.arrayBuffer();
+  const loading = document.getElementById("loading");
+
+  const timer = setTimeout(() => {
+    loading.style.display = "block";
+  }, 1000);
 
   window.Module = {
     canvas,
     noInitialRun: true,
     onRuntimeInitialized: () => {
+      clearTimeout(timer);
+      loading.style.display = "none";
       FS.writeFile("bundle.7z", new Uint8Array(bundle));
       Module.callMain();
     },
