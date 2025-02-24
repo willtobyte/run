@@ -64,7 +64,7 @@ artifacts:
     runtime: "1.0.56"
     organization: willtobyte
     repository: megarick
-    release: "1.0.34"
+    release: "1.0.35"
     resolution: 720p
     about: |
       # **MegaRick**
