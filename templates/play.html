@@ -1,7 +1,5 @@
 {% extends "base.html" %} {% block head %}
-<base
-  href="/assets/{{ runtime }}/{{ organization }}/{{ repository }}/{{ release }}/"
-/>
+<base href="/assets/{{ runtime }}/{{ organization }}/{{ repository }}/{{ release }}/" />
 <style>
   *, *::before, *::after {
     box-sizing: border-box;
@@ -82,9 +80,7 @@
 <div class="page-wrapper">
   <div class="container">
     <canvas id="canvas"></canvas>
-    <div id="loading" style="display: none">
-      This is taking a little longer than expected
-    </div>
+    <div id="loading" style="display: none">This is taking a little longer than expected</div>
   </div>
   {% if about %}
   <div class="about">{{ about|safe }}</div>
