@@ -1,59 +1,57 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block head %}
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+  }
 
-{% block head %}
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: sans-serif;
-    }
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
+  li {
+    margin: 20px;
+    flex: 1 1 300px;
+    text-align: center;
+  }
 
-    li {
-      margin: 20px;
-      flex: 1 1 300px;
-      text-align: center;
-    }
+  a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
 
-    a {
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
+  img {
+    width: 100%;
+    max-width: 480px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
 
-    img {
-      width: 100%;
-      max-width: 480px;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-    }
-  </style>
-{% endblock %}
-
-{% block content %}
-  <ul style="list-style: none; padding: 0;">
-    {% for artifact in artifacts %}
-      <li>
-        <a href="/play/{{ artifact.slug }}">
-          <img
-            src="{{ artifact.cover }}"
-            alt="Cover for {{ artifact.repository }}"
-            width="480"
-            height="270"
-            loading="lazy"
-          >
-          /play/{{ artifact.repository }}
-        </a>
-      </li>
-    {% endfor %}
-  </ul>
+  footer {
+    padding-top: 16px;
+    text-align: center;
+  }
+</style>
+{% endblock %} {% block content %}
+<ul style="list-style: none; padding: 0">
+  {% for artifact in artifacts %}
+  <li>
+    <a href="/play/{{ artifact.slug }}">
+      <img src="{{ artifact.cover }}" alt="Cover for {{ artifact.repository }}" width="480" height="270" loading="lazy" />
+      /play/{{ artifact.repository }}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+<footer>
+  <a href="https://github.com/willtobyte"><strong>Copyleft by Will To Byte</strong> – Visit GitHub</a>
+</footer>
 {% endblock %}
