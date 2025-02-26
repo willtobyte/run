@@ -1,7 +1,5 @@
 -r requirements.txt
 
-conan==2.11.0
-
 py7zr==0.22.0
 rx==3.2.0
 watchdog==6.0.0

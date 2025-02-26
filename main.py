@@ -7,8 +7,6 @@ import zipfile
 from asyncio import to_thread
 from datetime import datetime
 from datetime import timedelta
-from functools import partial
-from functools import wraps
 from importlib import import_module
 from io import BytesIO
 from time import mktime
@@ -62,22 +60,6 @@ class Context:
     def __init__(self, clients: set[WebSocket], lock: asyncio.Lock) -> None:
         self.clients = clients
         self.lock = lock
-
-
-def nocache(func):
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        response = await func(*args, **kwargs)
-        response.headers.update(
-            {
-                "Cache-Control": "no-cache, no-store, must-revalidate, proxy-revalidate",
-                "Pragma": "no-cache",
-                "Expires": "0",
-            }
-        )
-        return response
-
-    return wrapper
 
 
 clients = set()
@@ -141,10 +123,9 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         case {"rpc": {"request": {"id": id, "method": method, "arguments": arguments}}}:
                             response = {"rpc": {"response": {"id": id}}}
                             try:
+                                dispatch = {list: lambda args: module.run(args), dict: lambda args: module.run(**args)}
                                 module = import_module(f"procedures.{method}")
-                                arguments = dict(arguments) if isinstance(arguments, (dict, list)) else {}
-                                func = partial(module.run, **arguments)
-                                result = await to_thread(func)
+                                result = await to_thread(dispatch[type(arguments)], arguments)
                                 response["rpc"]["response"]["result"] = result
 
                                 logger.info(
