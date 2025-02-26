@@ -10,10 +10,9 @@
     font-family: "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;
   }
 
-  .wrapper {
+  main {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
     align-items: center;
     min-height: 100vh;
   }
@@ -59,6 +58,7 @@
     text-align: left;
     width: 100%;
     max-width: 1080px;
+    margin-top: 16px;
   }
 
   @media only screen and (max-width: 414px) {
@@ -77,7 +77,7 @@
   }
 </style>
 {% endblock %} {% block content %}
-<div class="wrapper">
+<main>
   <div class="container">
     <canvas id="canvas"></canvas>
     <div id="loading" style="display: none">This is taking a little longer than expected</div>
@@ -85,7 +85,7 @@
   {% if about %}
   <div class="about">{{ about|safe }}</div>
   {% endif %}
-</div>
+</main>
 <script type="module">
   const canvas = document.getElementById("canvas");
   const response = await fetch("bundle.7z");
