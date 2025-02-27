@@ -96,7 +96,7 @@ artifacts:
 
   - name: Henrique
     slug: henrique
-    cover: /media/henrique/cover.avif
+    cover: /media/henrique/cover.png
     runtime: "1.0.2"
     organization: willtobyte
     repository: henrique
