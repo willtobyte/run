@@ -27,6 +27,10 @@ cat <<CODE >> main.py
 import asyncio
 import io
 import os
+from pathlib import Path
+from typing import Any
+from typing import Awaitable
+from typing import Callable
 
 import py7zr
 from fastapi import APIRouter
@@ -35,55 +39,60 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from rx import create
+from rx.core.typing import Observable
+from rx.core.typing import Observer
 from rx.disposable import CompositeDisposable
 from rx.operators import debounce
 from rx.operators import flat_map
 from rx.scheduler.eventloop import AsyncIOScheduler
 from rx.subject import Subject
+from starlette.responses import Response
+from starlette.types import Scope
+from watchdog.events import FileSystemEvent
 from watchdog.events import FileSystemEventHandler
 from watchdog.events import PatternMatchingEventHandler
-from watchdog.observers import Observer
+from watchdog.observers import Observer as WatchdogObserver
 
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
 async def reload() -> None:
-    message = {"command": "reload"}
+    message: dict[str, Any] = {"command": "reload"}
     tasks = (asyncio.create_task(c.send_json(message)) for c in clients)
     await asyncio.gather(*tasks)
 
 
 class FilteredEventHandler(PatternMatchingEventHandler):
-    def __init__(self, notifier: Subject):
+    def __init__(self, notifier: Subject) -> None:
         super().__init__(patterns=["*.js", "*.wasm"], ignore_directories=True)
-        self.notifier = notifier
+        self.notifier: Subject = notifier
 
-    def on_modified(self, event):
+    def on_modified(self, event: FileSystemEvent) -> None:
         self.notifier.on_next(0)
 
 
 class AllFilesEventHandler(FileSystemEventHandler):
-    def __init__(self, notifier: Subject):
-        self.notifier = notifier
+    def __init__(self, notifier: Subject) -> None:
+        self.notifier: Subject = notifier
 
-    def on_modified(self, event):
+    def on_modified(self, event: FileSystemEvent) -> None:
         self.notifier.on_next(0)
 
 
-def observe(path: str, handler: FileSystemEventHandler) -> Observer:
-    observer = Observer()
+def observe(path: str, handler: FileSystemEventHandler) -> WatchdogObserver:
+    observer: WatchdogObserver = WatchdogObserver()
     observer.schedule(handler, path, recursive=True)
     observer.start()
     return observer
 
 
 @app.on_event("startup")
-async def startup_event():
-    def execute(coroutine):
-        def observable(observer, _):
-            async def run():
+async def startup_event() -> None:
+    def execute(coroutine: Callable[[], Awaitable[Any]]) -> Observable:
+        def observable(observer: Observer, _: Any) -> None:
+            async def run() -> None:
                 try:
-                    result = await coroutine()
+                    result: Any = await coroutine()
                     observer.on_next(result)
                     observer.on_completed()
                 except Exception as ex:
@@ -96,14 +105,14 @@ async def startup_event():
     loop = asyncio.get_event_loop()
     scheduler = AsyncIOScheduler(loop=loop)
 
-    engine_notifier = Subject()
+    engine_notifier: Subject = Subject()
     engine_subscription = engine_notifier.pipe(
         debounce(3.0, scheduler=scheduler), flat_map(lambda _: execute(reload))
     ).subscribe()
     engine_handler = FilteredEventHandler(engine_notifier)
     engine_observer = observe("/opt/engine", engine_handler)
 
-    game_notifier = Subject()
+    game_notifier: Subject = Subject()
     game_subscription = game_notifier.pipe(
         debounce(3.0, scheduler=scheduler), flat_map(lambda _: execute(reload))
     ).subscribe()
@@ -116,7 +125,7 @@ async def startup_event():
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     if hasattr(app.state, "observers"):
         for observer in app.state.observers:
             observer.stop()
@@ -132,15 +141,15 @@ playground = APIRouter(prefix="/playground")
 
 
 @playground.get("/")
-async def debug(request: Request):
+async def debug(request: Request) -> Response:
     return templates.TemplateResponse("playground.html", context={"request": request})
 
 
 @playground.get("/bundle.7z")
-async def bundle():
-    source = "/opt/game"
+async def bundle() -> StreamingResponse:
+    source: str = "/opt/game"
 
-    def generate():
+    def generate() -> Any:
         with io.BytesIO() as buffer:
             with py7zr.SevenZipFile(buffer, mode="w") as archive:
                 for root, dirs, files in os.walk(source):
@@ -150,7 +159,6 @@ async def bundle():
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, source)
                         archive.write(file_path, arcname)
-
             buffer.seek(0)
             while chunk := buffer.read(8192 * 64):
                 yield chunk
@@ -159,20 +167,22 @@ async def bundle():
         content=generate(),
         media_type="application/x-7z-compressed",
         headers={
-          "Content-Disposition": "attachment; filename=bundle.7z",
-          "Cache-Control": "no-transform",
+            "Content-Disposition": "attachment; filename=bundle.7z",
+            "Cache-Control": "no-transform",
         },
     )
 
 
 class NoCacheStaticFiles(StaticFiles):
-    async def get_response(self, path: str, scope):
-        response = await super().get_response(path, scope)
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        cleaned_path = str(Path(path.split("@")[0]))
+        response = await super().get_response(cleaned_path, scope)
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         return response
 
 
 app.include_router(playground)
+app.mount("/src", NoCacheStaticFiles(directory="/opt/src"), name="assets")
 app.mount("/playground", NoCacheStaticFiles(directory="/opt/engine"), name="assets")
 CODE
 EOF
