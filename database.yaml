@@ -61,7 +61,7 @@ artifacts:
   - name: MegaRick
     slug: megarick
     cover: /media/megarick/cover.png
-    runtime: "1.0.60"
+    runtime: "1.0.61"
     organization: willtobyte
     repository: megarick
     release: "1.0.38"

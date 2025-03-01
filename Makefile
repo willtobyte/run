@@ -1,5 +1,6 @@
 .SILENT:
 .PHONY: help run
+.DEFAULT_GOAL := run
 
 SHELL := bash -eou pipefail
 
