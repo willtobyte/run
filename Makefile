@@ -1,6 +1,7 @@
+.SILENT:
 .PHONY: help run
 
-SHELL := bash -eoux pipefail
+SHELL := bash -eou pipefail
 
 ifeq ($(shell command -v docker-compose;),)
 	COMPOSE := docker compose
