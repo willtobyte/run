@@ -258,11 +258,12 @@ async def healthcheck(redis: Redis = Depends(get_redis)):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, response_class=HTMLResponse):
-    artifacts = database.get("artifacts", [])
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"artifacts": artifacts},
+        context={
+            "artifacts": database["artifacts"],
+        },
     )
 
 
@@ -312,7 +313,7 @@ async def dynamic(
             raise HTTPException(status_code=404)
 
     result = await download(redis, url, filename)
-    if result is None:
+    if not result:
         raise HTTPException(status_code=404)
 
     content, etag = result
