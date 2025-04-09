@@ -151,7 +151,7 @@ async def bundle() -> StreamingResponse:
 
     def generate() -> Any:
         with io.BytesIO() as buffer:
-            with py7zr.SevenZipFile(buffer, mode="w") as archive:
+            with py7zr.SevenZipFile(buffer, mode="w", filters=[{"id": py7zr.FILTER_LZMA2, "preset": 1}]) as archive:
                 for root, dirs, files in os.walk(source):
                     if ".git" in dirs:
                         dirs.remove(".git")
