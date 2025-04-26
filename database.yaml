@@ -130,12 +130,12 @@ artifacts:
 
       **Enjoy!**
 
-  - name: Rickcraft
-    slug: rickcraft
-    cover: /media/rickcraft/cover.png
+  - name: Tinycraft
+    slug: tinycraft
+    cover: /media/tinycraft/cover.avif
     runtime: "1.1.91"
     organization: willtobyte
-    repository: rickcraft
+    repository: tinycraft
     release: "1.0.0"
     resolution: 720p
     about: |
