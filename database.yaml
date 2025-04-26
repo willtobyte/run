@@ -129,3 +129,34 @@ artifacts:
       Check out the **source code** on [GitHub](https://github.com/willtobyte/henrique).
 
       **Enjoy!**
+
+  - name: Rickcraft
+    slug: rickcraft
+    cover: /media/rickcraft/cover.png
+    runtime: "1.1.90"
+    organization: willtobyte
+    repository: henrique
+    release: "1.0.0"
+    resolution: 720p
+    about: |
+      # **Rickcraft**
+
+      A super simple game for my son’s birthday.
+
+      ## How to Play
+
+      Use the arrows keys to move.
+
+      ## Who
+
+      - **Programming**: [Rodrigo Delduca](https://rodrigodelduca.org)
+
+      Powered by [Carimbo](https://github.com/willtobyte/carimbo).
+
+      ## Platforms
+
+      This game is designed for **desktop web browsers only**.
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/henrique).
+
+      **Enjoy!**
