@@ -135,7 +135,7 @@ artifacts:
     cover: /media/rickcraft/cover.png
     runtime: "1.1.91"
     organization: willtobyte
-    repository: henrique
+    repository: rickcraft
     release: "1.0.0"
     resolution: 720p
     about: |
