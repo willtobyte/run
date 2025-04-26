@@ -133,7 +133,7 @@ artifacts:
   - name: Rickcraft
     slug: rickcraft
     cover: /media/rickcraft/cover.png
-    runtime: "1.1.90"
+    runtime: "1.1.91"
     organization: willtobyte
     repository: henrique
     release: "1.0.0"
