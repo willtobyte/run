@@ -335,4 +335,10 @@ async def dynamic(
     )
 
 
+@app.get("/{path:path}.php")
+async def honeypot(path: str) -> Response:
+    await asyncio.sleep(120)
+    return Response(status_code=204)
+
+
 app.include_router(router)
