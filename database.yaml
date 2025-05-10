@@ -1,0 +1,162 @@
+bundles:
+  - name: MOS6502
+    slug: MOS6502
+    cover: /media/MOS6502/cover.png
+    runtime: "1.0.43"
+    organization: willtobyte
+    repository: MOS6502
+    release: "1.0.7"
+    resolution: 720p
+    about: |
+      # **MOS6502**
+
+      [MOS6502](https://en.wikipedia.org/wiki/MOS_Technology_6502) in pure [Lua](https://www.lua.org/)
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/MOS6502).
+
+      ## About
+      My plan is to build an emulator for the [Nintendo Entertainment System](https://en.wikipedia.org/wiki/Nintendo_Entertainment_System).
+
+      Powered by [Carimbo](https://github.com/willtobyte/carimbo).
+
+  - name: Slime
+    slug: slime
+    cover: /media/slime/cover.avif
+    runtime: "1.0.45"
+    organization: willtobyte
+    repository: slime
+    release: "1.0.12"
+    resolution: 720p
+    about: |
+      # **Slime**
+
+      An apocalyptic hand trying to shape the ideas of a slime.
+
+      ## How to Play
+
+      You’ll need **two controllers**:
+      One controls the slime and the other the hand.
+
+      Use directional buttons to move and attack.
+
+      ### Gameplay Mechanics
+      - Each player tries to **deceive** the other and then **attack**.
+      - The first to **successfully attack** earns a point.
+
+      ## Who
+
+      - **Pixel Art**: [Alyson Monteiro](https://alysonkof.com.br)
+      - **Programming**: [Rodrigo Delduca](https://rodrigodelduca.org)
+
+      Powered by [Carimbo](https://github.com/willtobyte/carimbo).
+
+      ## Platforms
+
+      This game is designed for **desktop web browsers only**.
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/slime).
+
+      **Enjoy!**
+
+  - name: MegaRick
+    slug: megarick
+    cover: /media/megarick/cover.png
+    runtime: "1.0.70"
+    organization: willtobyte
+    repository: megarick
+    release: "1.0.41"
+    resolution: 720p
+    about: |
+      # **MegaRick**
+
+      An evil green octopus trying to stop Henrique from saving his mother.
+
+      ## About
+
+      First game I made for my son using the [Carimbo engine](https://github.com/willtobyte/carimbo). You can read more here: [My First Game with Carimbo](https://nullonerror.org/2024/10/08/my-first-game-with-carimbo/).
+
+      ## How to Play
+
+      Use the arrow keys to move and the spacebar to shoot.
+
+      ## Who
+
+      - **Pixel Art**: [Aline Bulcão](https://linktr.ee/dandelion.pixelart)
+      - **Programming**: [Rodrigo Delduca](https://rodrigodelduca.org)
+
+      Powered by [Carimbo](https://github.com/willtobyte/carimbo).
+
+      ## Platforms
+
+      This game is designed for **desktop web browsers only**.
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/megarick).
+
+      **Enjoy!**
+
+  - name: Henrique
+    slug: henrique
+    cover: /media/henrique/cover.png
+    runtime: "1.0.2"
+    organization: willtobyte
+    repository: henrique
+    release: "0.0.28"
+    resolution: 720p
+    about: |
+      # **Henrique, the little apple critter, that little red one, you know?**
+
+      A cheeky little apple worm!
+
+      Game code (Lua) written by ChatGPT.
+
+      ## How to Play
+
+      Use the WASD keys to move.
+
+      ## Who
+
+      First demo made with the engine (around 2023). At that time, the engine was very rudimentary and only drew sprites and handled input.
+
+      - **Programming**: [ChatGPT 3.5](https://openai.com)
+      - **Pixel Art**: [Aline Bulcão](https://linktr.ee/dandelion.pixelart)
+
+      Powered by [Carimbo](https://github.com/willtobyte/carimbo).
+
+      ## Platforms
+
+      This game is designed for **desktop web browsers only**.
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/henrique).
+
+      **Enjoy!**
+
+  - name: Tinycraft
+    slug: tinycraft
+    cover: /media/tinycraft/cover.avif
+    runtime: "1.1.91"
+    organization: willtobyte
+    repository: tinycraft
+    release: "1.0.0"
+    resolution: 720p
+    about: |
+      # **Tinycraft**
+
+      A super simple game for my son’s birthday.
+
+      ## How to Play
+
+      Use the arrows keys to move.
+
+      ## Who
+
+      - **Programming**: [Rodrigo Delduca](https://rodrigodelduca.org)
+
+      Powered by [Carimbo](https://github.com/willtobyte/carimbo).
+
+      ## Platforms
+
+      This game is designed for **desktop web browsers only**.
+
+      Check out the **source code** on [GitHub](https://github.com/willtobyte/henrique).
+
+      **Enjoy!**

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block head %}
+<style>
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    font-family: "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  li {
+    margin: 20px;
+    flex: 1 1 300px;
+    text-align: center;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  img {
+    width: 100%;
+    max-width: 480px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+
+  footer {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<main>
+  <ul>
+    {% for bundle in bundles %}
+    <li>
+      <a href="/play/{{ bundle.slug }}">
+        <img
+          src="{{ bundle.cover }}"
+          alt="Cover for {{ bundle.repository }}"
+          width="480"
+          height="270"
+          loading="lazy"
+        />
+        /play/{{ bundle.repository }}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</main>
+<footer>
+  <a href="https://github.com/willtobyte">Copyleft by <strong>Will To Byte</strong> – check out our GitHub repository.</a>
+</footer>
+{% endblock %}

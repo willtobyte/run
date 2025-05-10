@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block head %}
+<link
+  rel="preload"
+  href="/runtimes/{{ runtime }}/carimbo.js"
+  as="script"
+/>
+<link
+  rel="preload"
+  href="/runtimes/{{ runtime }}/carimbo.wasm"
+  as="fetch"
+  type="application/wasm"
+  crossorigin
+/>
+<link
+  rel="preload"
+  href="/bundles/{{ organization }}/{{ repository}}/{{ release }}/bundle.7z"
+  as="fetch"
+  type="application/octet-stream"
+  crossorigin
+/>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;
+  }
+
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .container {
+    width: {{ width }}px;
+    max-width: 100vw;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0;
+    animation: fade 1s ease forwards;
+  }
+
+  #loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 8px 12px;
+    border-radius: 4px;
+  }
+
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .about {
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: left;
+    width: 100%;
+    max-width: 1080px;
+    margin-top: 16px;
+  }
+
+  @media only screen and (max-width: 414px) {
+    .about {
+      padding: 16px;
+    }
+  }
+
+  @media only screen and (min-width: 1024px) {
+    .about {
+      width: {{ width }}px;
+      margin: 8px 0 16px calc((100vw - {{ width }}px) / 2);
+      text-align: left;
+      align-self: flex-start;
+    }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<main>
+  <div class="container">
+    <canvas id="canvas"></canvas>
+    <div id="loading" style="display: none">
+      This is taking a little longer than expected
+    </div>
+  </div>
+  {% if about %}
+  <div class="about">{{ about | markdown | safe }}</div>
+  {% endif %}
+</main>
+<script type="module">
+  const canvas = document.getElementById("canvas");
+  const response = await fetch("/bundles/{{ organization }}/{{ repository}}/{{ release }}/bundle.7z");
+  const bundle = await response.arrayBuffer();
+  const loading = document.getElementById("loading");
+
+  const timer = setTimeout(() => {
+    loading.style.display = "block";
+  }, 500);
+
+  window.Module = {
+    canvas,
+    noInitialRun: true,
+    locateFile: (path) => {
+      if (path.endsWith(".wasm")) {
+        return "/runtimes/{{ runtime }}/" + path;
+      }
+    },
+    onRuntimeInitialized: () => {
+      clearTimeout(timer);
+      loading.style.display = "none";
+      FS.writeFile("bundle.7z", new Uint8Array(bundle));
+      Module.callMain();
+    },
+  };
+
+  const script = document.createElement("script");
+  script.src = "/runtimes/{{ runtime }}/carimbo.js";
+  script.defer = true;
+  document.body.appendChild(script);
+</script>
+{% endblock %}
