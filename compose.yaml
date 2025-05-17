@@ -2,12 +2,12 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
+    ports:
+      - "3000:3000"
     volumes:
+      - ../sandbox:/opt/game:ro
+      - ../carimbo/src:/opt/src:ro
+      - ../carimbo/build:/opt/engine:ro
       - /var/run/docker.sock:/var/run/docker.sock
   redis:
     image: redis:latest
@@ -17,6 +17,8 @@ services:
       interval: 1s
       timeout: 1s
       retries: 3
+    ports:
+      - "6379:6379"
     restart: unless-stopped
     volumes:
       - storage:/data

@@ -1,4 +1,4 @@
-FROM python:3.13-slim AS base
+FROM python:3.13 AS base
 
 ENV PATH=/opt/venv/bin:$PATH
 ENV PYTHONUNBUFFERED=1
@@ -16,9 +16,6 @@ python -m venv .
 pip install --no-cache-dir --requirement requirements.txt
 EOF
 
-FROM base
-WORKDIR /opt/venv
-COPY --from=venv /opt/venv .
 WORKDIR /opt/app
 COPY . .
 
