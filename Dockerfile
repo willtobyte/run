@@ -12,7 +12,7 @@ python -m venv .
 pip install --no-cache-dir --requirement requirements.txt
 EOF
 
-FROM python:3.13-slim
+FROM base
 WORKDIR /opt/app
 COPY --from=venv /opt/venv /opt/venv
 COPY . .
