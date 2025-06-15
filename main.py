@@ -1,16 +1,17 @@
 import asyncio
-import io
 import logging
+import os
+import subprocess
 from asyncio import to_thread
 from importlib import import_module
 from pathlib import Path
+from subprocess import run
 from types import SimpleNamespace
 from typing import Any
 from typing import Awaitable
 from typing import Callable
 from typing import Final
 
-import py7zr
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi import Response
@@ -18,7 +19,6 @@ from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from rx import create
 from rx.core.typing import Observable
@@ -28,6 +28,7 @@ from rx.operators import debounce
 from rx.operators import flat_map
 from rx.scheduler.eventloop import AsyncIOScheduler
 from rx.subject import Subject
+from starlette.staticfiles import StaticFiles
 from starlette.types import Scope
 from watchdog.events import FileSystemEvent
 from watchdog.events import FileSystemEventHandler
@@ -226,25 +227,36 @@ async def debug(request: Request) -> Response:
 
 @app.get("/bundle.7z")
 async def bundle() -> Response:
-    buffer: Final[io.BytesIO] = io.BytesIO()
     source: Final[Path] = Path("/opt/game")
+    output: Final[Path] = Path("/tmp/bundle.7z")
+    binary: Final[str] = "/usr/bin/7z"
 
-    with py7zr.SevenZipFile(
-        buffer,
-        mode="w",
-        filters=[{"id": py7zr.FILTER_COPY}],
-    ) as archive:
-        for path in source.rglob("*"):
-            if path.is_dir() or path.name.startswith("."):
-                continue
-            archive.write(path.as_posix(), path.relative_to(source).as_posix())
+    output.unlink(missing_ok=True)
+
+    run(
+        [
+            binary,
+            "a",
+            "-t7z",
+            "-m0=lzma2",
+            "-mx=3",
+            "-ms=off",
+            "-mmt=on",
+            output.as_posix(),
+            f"{source.as_posix()}{os.sep}*",
+            "-xr!.*",
+        ],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
     return Response(
-        content=buffer.getvalue(),
+        content=output.read_bytes(),
         media_type="application/x-7z-compressed",
         headers={
             "Content-Disposition": "attachment; filename=bundle.7z",
-            "Cache-Control": "no-transform",
+            "Cache-Control": "no-store",
         },
     )
 
