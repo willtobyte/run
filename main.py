@@ -1,7 +1,6 @@
 import asyncio
 import io
 import logging
-import os
 from asyncio import to_thread
 from importlib import import_module
 from pathlib import Path
@@ -9,16 +8,16 @@ from types import SimpleNamespace
 from typing import Any
 from typing import Awaitable
 from typing import Callable
+from typing import Final
 
 import py7zr
-from fastapi import APIRouter
 from fastapi import FastAPI
 from fastapi import Request
+from fastapi import Response
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from rx import create
@@ -29,7 +28,6 @@ from rx.operators import debounce
 from rx.operators import flat_map
 from rx.scheduler.eventloop import AsyncIOScheduler
 from rx.subject import Subject
-from starlette.responses import Response
 from starlette.types import Scope
 from watchdog.events import FileSystemEvent
 from watchdog.events import FileSystemEventHandler
@@ -227,34 +225,22 @@ async def debug(request: Request) -> Response:
 
 
 @app.get("/bundle.7z")
-async def bundle() -> StreamingResponse:
-    buffer: io.BytesIO = io.BytesIO()
-    source: str = "/opt/game"
+async def bundle() -> Response:
+    buffer: Final[io.BytesIO] = io.BytesIO()
+    source: Final[Path] = Path("/opt/game")
+
     with py7zr.SevenZipFile(
         buffer,
         mode="w",
-        filters=[
-            {
-                "id": py7zr.FILTER_LZMA2,
-                "preset": 3,
-            }
-        ],
+        filters=[{"id": py7zr.FILTER_COPY}],
     ) as archive:
-        for root, dirs, files in os.walk(source):
-            dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for path in source.rglob("*"):
+            if path.is_dir() or path.name.startswith("."):
+                continue
+            archive.write(path.as_posix(), path.relative_to(source).as_posix())
 
-            for file in files:
-                if file.startswith("."):
-                    continue
-
-                path = os.path.join(root, file)
-                arcname = os.path.relpath(path, source)
-                archive.write(path, arcname)
-
-    buffer.seek(0)
-
-    return StreamingResponse(
-        content=buffer,
+    return Response(
+        content=buffer.getvalue(),
         media_type="application/x-7z-compressed",
         headers={
             "Content-Disposition": "attachment; filename=bundle.7z",
