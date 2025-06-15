@@ -10,7 +10,6 @@ from typing import Any
 from typing import Awaitable
 from typing import Callable
 
-import docker
 import py7zr
 from fastapi import APIRouter
 from fastapi import FastAPI
@@ -22,7 +21,6 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from redis.asyncio import Redis
 from rx import create
 from rx.core.typing import Observable
 from rx.core.typing import Observer
@@ -91,7 +89,7 @@ async def disconnect(websocket: WebSocket) -> None:
         await broadcast.online(clients)
 
 
-@app.websocket("/")
+@app.websocket("/socket")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
     await add(websocket)
@@ -142,18 +140,6 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         await disconnect(websocket)
 
 
-redis = None
-client = docker.from_env()
-container = client.containers.get("redis")
-hostname = container.attrs["Config"]["Hostname"]
-
-
-async def get_redis() -> Redis:
-    if not redis:
-        raise RuntimeError("Redis client is not initialized.")
-    return redis
-
-
 async def reload() -> None:
     message: dict[str, Any] = {"command": "reload"}
     tasks = (asyncio.create_task(c.send_json(message)) for c in clients)
@@ -186,10 +172,6 @@ def observe(path: str, handler: FileSystemEventHandler) -> WatchdogObserver:
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    global redis
-    redis = Redis(host=hostname, port=6379, decode_responses=False)
-    await redis.ping()
-
     def execute(coroutine: Callable[[], Awaitable[Any]]) -> Observable:
         def observable(observer: Observer, _: Any) -> None:
             async def run() -> None:
@@ -228,10 +210,6 @@ async def startup_event() -> None:
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
-    global redis
-    if redis:
-        await redis.close()
-
     if hasattr(app.state, "observers"):
         for observer in app.state.observers:
             observer.stop()
@@ -243,43 +221,40 @@ async def shutdown_event() -> None:
             notifier.on_completed()
 
 
-playground = APIRouter(prefix="/playground")
-
-
-@playground.get("/")
+@app.get("/")
 async def debug(request: Request) -> Response:
     return templates.TemplateResponse("playground.html", context={"request": request})
 
 
-@playground.get("/bundle.7z")
+@app.get("/bundle.7z")
 async def bundle() -> StreamingResponse:
+    buffer: io.BytesIO = io.BytesIO()
     source: str = "/opt/game"
+    with py7zr.SevenZipFile(
+        buffer,
+        mode="w",
+        filters=[
+            {
+                "id": py7zr.FILTER_LZMA2,
+                "preset": 3,
+            }
+        ],
+    ) as archive:
+        for root, dirs, files in os.walk(source):
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
 
-    def generate() -> Any:
-        with io.BytesIO() as buffer:
-            with py7zr.SevenZipFile(
-                buffer,
-                mode="w",
-                filters=[
-                    {
-                        "id": py7zr.FILTER_LZMA2,
-                        "preset": 2,
-                    }
-                ],
-            ) as archive:
-                for root, dirs, files in os.walk(source):
-                    if ".git" in dirs:
-                        dirs.remove(".git")
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, source)
-                        archive.write(file_path, arcname)
-            buffer.seek(0)
-            while chunk := buffer.read(8192 * 64):
-                yield chunk
+            for file in files:
+                if file.startswith("."):
+                    continue
+
+                path = os.path.join(root, file)
+                arcname = os.path.relpath(path, source)
+                archive.write(path, arcname)
+
+    buffer.seek(0)
 
     return StreamingResponse(
-        content=generate(),
+        content=buffer,
         media_type="application/x-7z-compressed",
         headers={
             "Content-Disposition": "attachment; filename=bundle.7z",
@@ -296,6 +271,5 @@ class NoCacheStaticFiles(StaticFiles):
         return response
 
 
-app.include_router(playground)
 app.mount("/src", NoCacheStaticFiles(directory="/opt/src"), name="assets")
-app.mount("/playground", NoCacheStaticFiles(directory="/opt/engine"), name="assets")
+app.mount("/", NoCacheStaticFiles(directory="/opt/engine"), name="assets")
